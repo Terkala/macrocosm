@@ -29,7 +29,7 @@ public sealed class BloodCultistMetabolismSystem : EntitySystem
     }
 
     /// <summary>
-    /// Applies unholy blood if the entity is a cultist with a bloodstream. Called from SharedBloodCultistSystem when BloodCultistComponent starts (e.g. conversion) so we don't duplicate the ComponentStartup subscription.
+    /// Applies unholy blood if the entity is a cultist with a bloodstream. Called from SharedBloodCultistSystem when BloodCultistComponent starts (conversion or admin smite)
     /// </summary>
     public void ApplyUnholyBloodIfCultistWithBloodstream(EntityUid uid)
     {
@@ -62,15 +62,16 @@ public sealed class BloodCultistMetabolismSystem : EntitySystem
             component.OriginalBloodReagent = originalBlood;
         }
 
+        var cultBloodReagent = string.IsNullOrEmpty(component.CultBloodReagent) ? "UnholyBlood" : component.CultBloodReagent;
         try
         {
-            var unholyBloodSolution = new Solution();
-            unholyBloodSolution.AddReagent((ProtoId<ReagentPrototype>)"UnholyBlood", FixedPoint2.New(1));
-            _bloodstream.ChangeBloodReagents((uid, bloodstream), unholyBloodSolution);
+            var cultBloodSolution = new Solution();
+            cultBloodSolution.AddReagent((ProtoId<ReagentPrototype>)cultBloodReagent, FixedPoint2.New(1));
+            _bloodstream.ChangeBloodReagents((uid, bloodstream), cultBloodSolution);
         }
         catch (Exception ex)
         {
-            Log.Error($"Failed to change blood type to UnholyBlood for {ToPrettyString(uid)}: {ex}");
+            Log.Error($"Failed to change blood type to {cultBloodReagent} for {ToPrettyString(uid)}: {ex}");
         }
     }
 

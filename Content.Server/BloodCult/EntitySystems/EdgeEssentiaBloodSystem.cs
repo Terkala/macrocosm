@@ -1,10 +1,9 @@
 using Content.Server.BloodCult.EntityEffects;
 using Content.Server.Body.Components;
 using Content.Server.Body.Systems;
-using Content.Shared.Body.Components;
-using Content.Server.GameTicking;
 using Content.Server.GameTicking.Rules;
 using Content.Server.GameTicking.Rules.Components;
+using Content.Shared.Body.Components;
 using Content.Shared.BloodCult.Components;
 using Content.Shared.Chemistry.Components;
 using Content.Shared.Chemistry.EntitySystems;
@@ -27,7 +26,6 @@ public sealed class EdgeEssentiaBloodSystem : EntitySystem
 	[Dependency] private readonly SharedSolutionContainerSystem _solutionContainer = default!;
 	[Dependency] private readonly BloodstreamSystem _bloodstream = default!;
 	[Dependency] private readonly BloodCultRuleSystem _bloodCultRule = default!;
-	[Dependency] private readonly GameTicker _gameTicker = default!;
 
 	private TimeSpan _nextUpdate = TimeSpan.Zero;
 	private bool _bloodCultRuleActive = false;
@@ -51,7 +49,10 @@ public sealed class EdgeEssentiaBloodSystem : EntitySystem
 
 		// At least one entity exists with EdgeEssentiaBloodComponent
 		// Check if BloodCult game rule is active (only needed if we're tracking blood loss)
-		_bloodCultRuleActive = _gameTicker.IsGameRuleActive<BloodCultRuleComponent>();
+		var cultBloodReagent = "UnholyBlood"; //default to Unholy Blood if no rule is active. This is a fallback for if edge essentia ever happens to exist without a blood cult gamerule
+		_bloodCultRuleActive = _bloodCultRule.TryGetActiveRule(out var ruleComp);
+		if (_bloodCultRuleActive)
+			cultBloodReagent = ruleComp.CultBloodReagent;
 
 		// Process the first entity
 		do
@@ -60,20 +61,20 @@ public sealed class EdgeEssentiaBloodSystem : EntitySystem
 			if (!Exists(uid))
 				continue;
 
-			// Track how much Unholy Blood they're bleeding out (only if cult rule is active)
-			// Check if their blood reference solution contains Unholy Blood
-			var hasUnholyBlood = false;
+			// Track how much cult blood they're bleeding out (only if cult rule is active)
+			// Check if their blood reference solution contains the cult blood reagent
+			var hasCultBlood = false;
 			foreach (var (reagentId, _) in bloodstream.BloodReferenceSolution.Contents)
 			{
-				if (reagentId.Prototype == "UnholyBlood")
+				if (reagentId.Prototype == cultBloodReagent)
 				{
-					hasUnholyBlood = true;
+					hasCultBlood = true;
 					break;
 				}
 			}
-			if (_bloodCultRuleActive && hasUnholyBlood)
+			if (_bloodCultRuleActive && hasCultBlood)
 			{
-				TrackUnholyBloodLoss(uid, edgeEssentia, bloodstream);
+				TrackUnholyBloodLoss(uid, edgeEssentia, bloodstream, cultBloodReagent);
 			}
 
 			// Check if they still have Edge Essentia in their system
@@ -93,7 +94,7 @@ public sealed class EdgeEssentiaBloodSystem : EntitySystem
 		while (query.MoveNext(out uid, out edgeEssentia, out bloodstream));
 	}
 
-	private void TrackUnholyBloodLoss(EntityUid uid, EdgeEssentiaBloodComponent edgeEssentia, BloodstreamComponent bloodstream)
+	private void TrackUnholyBloodLoss(EntityUid uid, EdgeEssentiaBloodComponent edgeEssentia, BloodstreamComponent bloodstream, string cultBloodReagent)
 	{
 		// Only count blood from player-controlled entities (those with an ACTUAL mind, not just the component)
 		// This prevents farming non-sentient entities like slimes, animals, etc.
@@ -105,19 +106,18 @@ public sealed class EdgeEssentiaBloodSystem : EntitySystem
 		if (tracker.TotalBloodCollected >= tracker.MaxBloodPerEntity)
 			return;
 
-	// Only track if their blood type is UnholyBlood AND they're bleeding
-	// Check if their blood reference solution contains Unholy Blood
-	var hasUnholyBlood = false;
-	foreach (var (reagentId, _) in bloodstream.BloodReferenceSolution.Contents)
-	{
-		if (reagentId.Prototype == "UnholyBlood")
+		// Only track if their blood type is the cult blood reagent AND they're bleeding
+		var hasCultBlood = false;
+		foreach (var (reagentId, _) in bloodstream.BloodReferenceSolution.Contents)
 		{
-			hasUnholyBlood = true;
-			break;
+			if (reagentId.Prototype == cultBloodReagent)
+			{
+				hasCultBlood = true;
+				break;
+			}
 		}
-	}
-	if (!hasUnholyBlood || bloodstream.BleedAmount <= 0)
-		return;
+		if (!hasCultBlood || bloodstream.BleedAmount <= 0)
+			return;
 
 		// Track based on how much they're bleeding per second
 		// BleedAmount represents units of blood lost per second

@@ -86,6 +86,11 @@ public sealed partial class BloodCultistComponent : Component
 	/// </summary>
 	[DataField] public string DefaultBloodReagent = "Blood";
 
+	/// <summary>
+	/// Reagent used when applying cult blood (e.g. Unholy Blood). Set from BloodCultRule on the server.
+	/// </summary>
+	[DataField] public string CultBloodReagent = "UnholyBlood";
+
 	[DataField] public SacrificingData? Sacrifice = null;
 	[DataField] public ConvertingData? Convert = null;
 

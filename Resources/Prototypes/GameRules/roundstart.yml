@@ -594,6 +594,7 @@
     minPlayers: 20
   - type: BloodCultRule
     possibleVeilBeaconPrefix: DefaultStationBeacon
+    cultBloodReagent: UnholyBlood
   - type: AntagSelection
     selectionTime: IntraPlayerSpawn
     definitions:

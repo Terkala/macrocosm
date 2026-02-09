@@ -115,6 +115,9 @@ public sealed partial class SharedEntityEffectsSystem : EntitySystem, IEntityEff
     /// <param name="user">The entity causing the effect.</param>
     public void ApplyEffect(EntityUid target, EntityEffect effect, float scale = 1f, EntityUid? user = null)
     {
+        if (!Exists(target))
+            return;
+
         // Clamp the scale if the effect doesn't allow scaling.
         if (!effect.Scaling)
             scale = Math.Min(scale, 1f);

@@ -381,6 +381,8 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 
 			if (TryComp<BloodCultistComponent>(traitor, out var cultist))
 			{
+				cultist.CultBloodReagent = component.CultBloodReagent;
+				Dirty(traitor, cultist);
 				//Tear veil rune logic
 				// propogate the selected Nar'Sie summon location
 				// Enable Tear Veil rune if stage 2 (HasRisen) or later has been reached
@@ -425,7 +427,12 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 
 		_role.MindAddRole(mindId, MindRole, mind, true);
 
-		EnsureComp<BloodCultistComponent>(traitor);
+		var cultistComp = EnsureComp<BloodCultistComponent>(traitor);
+		if (TryGetActiveRule(out var ruleComp))
+		{
+			cultistComp.CultBloodReagent = ruleComp.CultBloodReagent;
+			Dirty(traitor, cultistComp);
+		}
 
         _antag.SendBriefing(traitor, Loc.GetString("cult-role-greeting"), Color.Red, null);
 

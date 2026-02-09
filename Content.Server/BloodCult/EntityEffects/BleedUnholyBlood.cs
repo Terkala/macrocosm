@@ -1,6 +1,8 @@
 using System.Linq;
 using Content.Server.Body.Components;
 using Content.Server.Body.Systems;
+using Content.Server.GameTicking.Rules;
+using Content.Server.GameTicking.Rules.Components;
 using Content.Shared.Body.Components;
 using Content.Shared.EntityEffects;
 using Content.Shared.EntityEffects.Effects.Body;
@@ -13,18 +15,15 @@ using Robust.Shared.GameObjects;
 namespace Content.Server.BloodCult.EntityEffects;
 
 /// <summary>
-/// System that handles the BleedUnholyBlood entity effect, which changes a cultist's blood to Unholy Blood.
+/// System that handles the BleedUnholyBlood entity effect, which changes a cultist's blood to the cult blood reagent (e.g. Unholy Blood).
 /// </summary>
 public sealed partial class BleedUnholyBloodEntityEffectSystem : EntityEffectSystem<BloodstreamComponent, BleedUnholyBlood>
 {
     [Dependency] private readonly BloodstreamSystem _bloodstream = default!;
+    [Dependency] private readonly BloodCultRuleSystem _bloodCultRule = default!;
 
     protected override void Effect(Entity<BloodstreamComponent> entity, ref EntityEffectEvent<BleedUnholyBlood> args)
     {
-        // Verify target entity exists (could be deleted during metabolism processing)
-        if (!Exists(entity))
-            return;
-
         var bloodstream = entity.Comp;
 
         // Store their original blood type if not already stored
@@ -43,11 +42,12 @@ public sealed partial class BleedUnholyBloodEntityEffectSystem : EntityEffectSys
             edgeEssentiaComp.OriginalBloodReagent = originalBlood.ToString();
         }
 
-        // Change their blood type to Unholy Blood so that when they bleed, it comes out as Unholy Blood
-        // This happens every metabolism tick, ensuring their blood type stays as UnholyBlood while Edge Essentia is active
-        var unholyBloodSolution = new Solution();
-        unholyBloodSolution.AddReagent((ProtoId<ReagentPrototype>)"UnholyBlood", FixedPoint2.New(1));
-        _bloodstream.ChangeBloodReagents((entity, bloodstream), unholyBloodSolution);
+        // Change their blood type to cult blood so that when they bleed, it comes out as the configured reagent (e.g. Unholy Blood).
+        // This happens every metabolism tick, ensuring their blood type stays set while Edge Essentia is active.
+        var cultBloodReagent = _bloodCultRule.TryGetActiveRule(out var ruleComp) ? ruleComp.CultBloodReagent : "UnholyBlood";
+        var cultBloodSolution = new Solution();
+        cultBloodSolution.AddReagent((ProtoId<ReagentPrototype>)cultBloodReagent, FixedPoint2.New(1));
+        _bloodstream.ChangeBloodReagents((entity, bloodstream), cultBloodSolution);
     }
 
     private bool TryGetPrototypeBloodReagent(EntityUid uid, out ProtoId<ReagentPrototype> bloodReagent)

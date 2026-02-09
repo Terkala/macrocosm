@@ -19,11 +19,18 @@ namespace Content.Server.GameTicking.Rules.Components;
 public sealed partial class BloodCultRuleComponent : Component
 {
 	/// <summary>
-	///	Prototype ID prefix for beacons that can be Nar'Sie summon locations.
-	///	Only entities whose prototype ID starts with this prefix are eligible.
+	///	Possible Nar'Sie summon locations.
 	/// </summary>
 	[DataField(required: true)]
+	/// Overridden by the roundstart.yml setting, listed here just in case.
 	public string PossibleVeilBeaconPrefix = "DefaultStationBeacon";
+
+	/// <summary>
+	/// Reagent prototype ID used as "cult blood" (e.g. Unholy Blood for bleeding, ritual tracking, Edge Essentia).
+	/// Overridden by the roundstart.yml setting.
+	/// </summary>
+	[DataField]
+	public string CultBloodReagent = "UnholyBlood";
 
 	[DataField] public WeakVeilLocation? WeakVeil1 = null;
 	[DataField] public WeakVeilLocation? WeakVeil2 = null;
