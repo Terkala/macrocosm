@@ -2,6 +2,7 @@ using Robust.Shared.Serialization;
 using Robust.Shared.GameStates;
 using Robust.Shared.Map;
 using Robust.Shared.Audio;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 using Content.Shared.BloodCult.Prototypes;
 using Content.Shared.Actions;
@@ -55,70 +56,78 @@ public sealed partial class CultistSpellComponent : Component
 
 [Serializable, NetSerializable] public sealed partial class DrawRuneDoAfterEvent : SimpleDoAfterEvent
 {
-	[NonSerialized] public EntityUid CarverUid;
-	[NonSerialized] public EntityUid Rune;
-    [NonSerialized] public EntityCoordinates Coords;
-	[NonSerialized] public string EntityId;
-	[NonSerialized] public int BleedOnCarve;
-	[NonSerialized] public SoundSpecifier CarveSound;
-    [NonSerialized] public uint? EffectId;
-    [NonSerialized] public TimeSpan Duration;
+	public NetEntity NetCarverUid;
+	public NetEntity NetRune;
+	public NetCoordinates NetCoords;
+	public string EntityId = string.Empty;
+	public int BleedOnCarve;
+	public SoundSpecifier? CarveSound;
+	public uint? EffectId;
+	public TimeSpan Duration;
 
-    public DrawRuneDoAfterEvent(EntityUid carverUid, EntityUid rune, EntityCoordinates coords, string entityId, int bleedOnCarve, SoundSpecifier carveSound, uint? effectId, TimeSpan duration)
-    {
-		CarverUid = carverUid;
-        Rune = rune;
-        Coords = coords;
+	public DrawRuneDoAfterEvent(NetEntity carverUid, NetEntity rune, NetCoordinates coords, string entityId, int bleedOnCarve, SoundSpecifier? carveSound, uint? effectId, TimeSpan duration)
+	{
+		NetCarverUid = carverUid;
+		NetRune = rune;
+		NetCoords = coords;
 		EntityId = entityId;
 		BleedOnCarve = bleedOnCarve;
 		CarveSound = carveSound;
-        EffectId = effectId;
-        Duration = duration;
-    }
+		EffectId = effectId;
+		Duration = duration;
+	}
+
+	public override DoAfterEvent Clone() => this;
 }
 
 [Serializable, NetSerializable] public sealed partial class CarveSpellDoAfterEvent : SimpleDoAfterEvent
 {
-	[NonSerialized] public EntityUid CarverUid;
-	[NonSerialized] public CultAbilityPrototype CultAbility;
-	[NonSerialized] public bool RecordKnownSpell;
+	public NetEntity NetCarverUid;
+	public ProtoId<CultAbilityPrototype> CultAbilityId;
+	public bool RecordKnownSpell;
 	//When runes are re-added, uncomment this
-	//[NonSerialized] public bool StandingOnRune;
+	//public bool StandingOnRune;
 
 	//When runes are re-added, uncomment this and swap with below
-    //public CarveSpellDoAfterEvent(EntityUid carverUid, CultAbilityPrototype cultAbility, bool recordKnownSpell, bool standingOnRune)
-	public CarveSpellDoAfterEvent(EntityUid carverUid, CultAbilityPrototype cultAbility, bool recordKnownSpell)
-    {
-		CarverUid = carverUid;
-		CultAbility = cultAbility;
+	//public CarveSpellDoAfterEvent(NetEntity carverUid, ProtoId<CultAbilityPrototype> cultAbilityId, bool recordKnownSpell, bool standingOnRune)
+	public CarveSpellDoAfterEvent(NetEntity carverUid, ProtoId<CultAbilityPrototype> cultAbilityId, bool recordKnownSpell)
+	{
+		NetCarverUid = carverUid;
+		CultAbilityId = cultAbilityId;
 		RecordKnownSpell = recordKnownSpell;
 		//When runes are re-added, uncomment this
 		//StandingOnRune = standingOnRune;
-    }
+	}
+
+	public override DoAfterEvent Clone() => this;
 }
 
 [Serializable, NetSerializable] public sealed partial class TwistedConstructionDoAfterEvent : SimpleDoAfterEvent
 {
-	[NonSerialized] public new EntityUid Target;
+	public NetEntity NetTarget;
 
-    public TwistedConstructionDoAfterEvent(EntityUid target)
-    {
-        Target = target;
-    }
+	public TwistedConstructionDoAfterEvent(NetEntity target)
+	{
+		NetTarget = target;
+	}
+
+	public override DoAfterEvent Clone() => this;
 }
 
 [Serializable, NetSerializable] public sealed partial class MindshieldBreakDoAfterEvent : SimpleDoAfterEvent
 {
-	[NonSerialized] public EntityUid Victim;
-	[NonSerialized] public EntityUid[] Participants = Array.Empty<EntityUid>();
-	[NonSerialized] public EntityCoordinates RuneLocation;
+	public NetEntity NetVictim;
+	public NetEntity[] NetParticipants = Array.Empty<NetEntity>();
+	public NetCoordinates NetRuneLocation;
 
-    public MindshieldBreakDoAfterEvent(EntityUid victim, EntityUid[] participants, EntityCoordinates runeLocation)
-    {
-        Victim = victim;
-		Participants = participants;
-		RuneLocation = runeLocation;
-    }
+	public MindshieldBreakDoAfterEvent(NetEntity victim, NetEntity[] participants, NetCoordinates runeLocation)
+	{
+		NetVictim = victim;
+		NetParticipants = participants;
+		NetRuneLocation = runeLocation;
+	}
+
+	public override DoAfterEvent Clone() => this;
 }
 
 #endregion

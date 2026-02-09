@@ -1,6 +1,7 @@
 using Content.Client.UserInterface.Controls;
 using Content.Shared.BloodCult;
 using Robust.Client.GameObjects;
+using Robust.Shared.Localization;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.XAML;
@@ -16,10 +17,10 @@ namespace Content.Client.BloodCult.UI;
 
 public sealed partial class SpellRadialMenu : RadialMenu
 {
-    //[Dependency] private readonly EntityManager _entityManager = default!;
     [Dependency] private readonly IEntitySystemManager _entitySystem = default!;
     [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
     [Dependency] private readonly ISharedPlayerManager _playerManager = default!;
+    [Dependency] private readonly ILocalizationManager _loc = default!;
     private SpriteSystem _spriteSystem = default!;
 
 	public event Action<ProtoId<CultAbilityPrototype>>? SendSpellsMessageAction;
@@ -61,12 +62,17 @@ public sealed partial class SpellRadialMenu : RadialMenu
 			if (spellPrototype == null)
 				continue;
 
+			var tooltipKey = $"bloodcult-spell-tooltip-{cultAbility.Id}";
+			var tooltip = _loc.TryGetString(tooltipKey, out var localized)
+				? localized
+				: spellPrototype.Name + ": " + spellPrototype.Description;
+
 			var button = new SpellsMenuButton
             {
                 StyleClasses = { "RadialMenuButton" },
                 SetSize = new Vector2(64, 64),
-                ToolTip = spellPrototype.Name + ": " + spellPrototype.Description,//Loc.GetString(ritualPrototype.LocName),
-                ProtoId = cultAbility//ritualPrototype.ID
+                ToolTip = tooltip,
+                ProtoId = cultAbility
             };
             var texture = new TextureRect
             {

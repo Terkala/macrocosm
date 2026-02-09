@@ -149,11 +149,13 @@
     solution: melee
   - type: SolutionTransfer
     maxTransferAmount: 3
-  - type: ReagentAutoRefill
+  - type: SolutionRegeneration
     solution: melee
-    reagent: EdgeEssentia
-    refillRate: 0.5
-    maxAmount: 15
+    duration: 1
+    generated:
+      reagents:
+      - ReagentId: EdgeEssentia
+        Quantity: 0.5
   - type: EmbeddableProjectile
     sound: /Audio/Weapons/star_hit.ogg
     offset: -0.15,0.0

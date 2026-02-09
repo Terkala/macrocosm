@@ -19,29 +19,11 @@ namespace Content.Server.GameTicking.Rules.Components;
 public sealed partial class BloodCultRuleComponent : Component
 {
 	/// <summary>
-	///	Possible Nar'Sie summon locations.
+	///	Prototype ID prefix for beacons that can be Nar'Sie summon locations.
+	///	Only entities whose prototype ID starts with this prefix are eligible.
 	/// </summary>
-    public static List<string> PossibleVeilLocations = new List<string> {
-		"DefaultStationBeaconCaptainsQuarters", "DefaultStationBeaconHOPOffice",
-		"DefaultStationBeaconSecurity", "DefaultStationBeaconBrig",
-		"DefaultStationBeaconWardensOffice", "DefaultStationBeaconHOSRoom",
-		"DefaultStationBeaconArmory", "DefaultStationBeaconPermaBrig",
-		"DefaultStationBeaconDetectiveRoom", "DefaultStationBeaconCourtroom",
-		"DefaultStationBeaconLawOffice", "DefaultStationBeaconChemistry",
-		"DefaultStationBeaconCMORoom", "DefaultStationBeaconMorgue",
-		"DefaultStationBeaconRND", "DefaultStationBeaconServerRoom",
-		"DefaultStationBeaconRDRoom", "DefaultStationBeaconRobotics",
-		"DefaultStationBeaconArtifactLab", "DefaultStationBeaconAnomalyGenerator",
-		"DefaultStationBeaconCargoReception", "DefaultStationBeaconCargoBay",
-		"DefaultStationBeaconQMRoom", "DefaultStationBeaconSalvage",
-		"DefaultStationBeaconCERoom", "DefaultStationBeaconAME",
-		"DefaultStationBeaconTEG", "DefaultStationBeaconTechVault",
-		"DefaultStationBeaconKitchen", "DefaultStationBeaconBar",
-		"DefaultStationBeaconBotany", "DefaultStationBeaconAICore",
-		"DefaultStationBeaconEVAStorage", "DefaultStationBeaconChapel",
-		"DefaultStationBeaconLibrary", "DefaultStationBeaconTheater",
-		"DefaultStationBeaconToolRoom"
-	};
+	[DataField(required: true)]
+	public string PossibleVeilBeaconPrefix = "DefaultStationBeacon";
 
 	[DataField] public WeakVeilLocation? WeakVeil1 = null;
 	[DataField] public WeakVeilLocation? WeakVeil2 = null;

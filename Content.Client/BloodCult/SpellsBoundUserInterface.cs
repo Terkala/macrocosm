@@ -11,6 +11,10 @@ using Content.Client.BloodCult.UI;
 
 namespace Content.Client.BloodCult;
 
+/// <summary>
+/// Handles the spell selection radial menu for blood cultists
+/// This allows cultists to select a spell to memorize from a radial menu
+/// </summary>
 public sealed class SpellsBoundUserInterface : BoundUserInterface
 {
 	[Dependency] private readonly IClyde _displayManager = default!;
@@ -38,6 +42,6 @@ public sealed class SpellsBoundUserInterface : BoundUserInterface
 
 	private void SendSpellsMessage(ProtoId<CultAbilityPrototype> protoId)
 	{
-		SendMessage(new SpellsMessage(protoId));
+		SendPredictedMessage(new SpellsMessage(protoId));
 	}
 }

@@ -80,6 +80,12 @@ public sealed partial class BloodCultistComponent : Component
 	/// </summary>
 	[DataField] public string OriginalBloodReagent = "Blood";
 
+	/// <summary>
+	/// Default blood reagent used as fallback when no original/prototype value is known
+	/// (e.g. in metabolism restore logic). Configurable per antag definition in YAML (e.g. roundstart).
+	/// </summary>
+	[DataField] public string DefaultBloodReagent = "Blood";
+
 	[DataField] public SacrificingData? Sacrifice = null;
 	[DataField] public ConvertingData? Convert = null;
 

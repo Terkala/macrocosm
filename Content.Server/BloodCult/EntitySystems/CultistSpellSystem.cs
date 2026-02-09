@@ -15,7 +15,6 @@ using Content.Shared.Actions.Components;
 using Content.Shared.Stacks;
 using Content.Shared.BloodCult;
 using Content.Shared.BloodCult.Prototypes;
-using Content.Server.BloodCult.Components;
 using Content.Shared.BloodCult.Components;
 using Content.Shared.DoAfter;
 using Content.Shared.Damage;
@@ -23,11 +22,7 @@ using Content.Shared.Damage.Components;
 using Content.Shared.Damage.Prototypes;
 using Content.Shared.Damage.Systems;
 using Content.Server.GameTicking.Rules;
-using Content.Shared.StatusEffectNew;
-using Content.Shared.Speech.Muting;
 using Content.Shared.Stunnable;
-using Content.Shared.Emp;
-using Content.Server.Emp;
 using Content.Shared.Popups;
 using Content.Shared.Silicons.Borgs.Components;
 using Content.Shared.Weapons.Melee;
@@ -63,15 +58,10 @@ public sealed partial class CultistSpellSystem : EntitySystem
 	[Dependency] private readonly DamageableSystem _damageableSystem = default!;
 	[Dependency] private readonly PopupSystem _popup = default!;
 	[Dependency] private readonly SharedAudioSystem _audioSystem = default!;
-	[Dependency] private readonly StatusEffectsSystem _statusEffect = default!;
 	[Dependency] private readonly BloodCultRuleSystem _bloodCultRules = default!;
 	[Dependency] private readonly HandsSystem _hands = default!;
 	//[Dependency] private readonly StaminaSystem _stamina = default!;
-	[Dependency] private readonly EmpSystem _emp = default!;
 	[Dependency] private readonly SharedDoAfterSystem _doAfter = default!;
-	[Dependency] private readonly SharedTransformSystem _transform = default!;
-	[Dependency] private readonly MapSystem _mapSystem = default!;
-	[Dependency] private readonly IMapManager _mapManager = default!;
 	//[Dependency] private readonly IEntityManager _entMan = default!;
 	[Dependency] private readonly SharedStunSystem _stun = default!;
 	//[Dependency] private readonly ConstructionSystem _construction = default!;
@@ -189,7 +179,7 @@ public sealed partial class CultistSpellSystem : EntitySystem
 			//	uid, data, recordKnownSpell, standingOnRune), uid
 			_popup.PopupEntity(Loc.GetString("cult-spell-carving"), uid, uid, PopupType.MediumCaution);
 			var dargs = new DoAfterArgs(EntityManager, uid, data.DoAfterLength, new CarveSpellDoAfterEvent(
-				uid, data, recordKnownSpell), uid //Placeholder code to make it work with no runes
+				GetNetEntity(uid), id, recordKnownSpell), uid //Placeholder code to make it work with no runes
 			)
 			{
 				BreakOnDamage = true,
@@ -223,6 +213,9 @@ public sealed partial class CultistSpellSystem : EntitySystem
 
 	public void OnCarveSpellDoAfter(Entity<BloodCultistComponent> ent, ref CarveSpellDoAfterEvent args)
 	{
+		var cultAbility = _proto.Index(args.CultAbilityId);
+		var carverUid = GetEntity(args.NetCarverUid);
+
 		//Code for when runes are added
 		//if (ent.Comp.KnownSpells.Count > 3 || (!args.StandingOnRune && ent.Comp.KnownSpells.Count > 0))
 		if (ent.Comp.KnownSpells.Count > 3 || ent.Comp.KnownSpells.Count > 0)
@@ -230,42 +223,42 @@ public sealed partial class CultistSpellSystem : EntitySystem
 			_popup.PopupEntity(Loc.GetString("cult-spell-exceeded"), ent, ent);
 			return;
 		}
-		if (args.CultAbility.ActionPrototypes == null)
+		if (cultAbility.ActionPrototypes == null)
 			return;
 
 		DamageSpecifier appliedDamageSpecifier = new DamageSpecifier(
 			_proto.Index(SlashDamageType),
 			//Code for when runes are added
-			//FixedPoint2.New(args.CultAbility.HealthDrain * (args.StandingOnRune ? 1 : 3))
-			FixedPoint2.New(args.CultAbility.HealthDrain)
+			//FixedPoint2.New(cultAbility.HealthDrain * (args.StandingOnRune ? 1 : 3))
+			FixedPoint2.New(cultAbility.HealthDrain)
 		);
 
         if (!args.Cancelled)
 		{
 			// Add actions to the mind's action container if available, otherwise to the entity
-			if (_mind.TryGetMind(args.CarverUid, out var mindId, out _))
+			if (_mind.TryGetMind(carverUid, out var mindId, out _))
 			{
-				foreach (var act in args.CultAbility.ActionPrototypes)
+				foreach (var act in cultAbility.ActionPrototypes)
 				{
 					_actionContainer.AddAction(mindId, act);
 				}
 			}
 			else
 			{
-				foreach (var act in args.CultAbility.ActionPrototypes)
+				foreach (var act in cultAbility.ActionPrototypes)
 				{
-					_action.AddAction(args.CarverUid, act);
+					_action.AddAction(carverUid, act);
 				}
 			}
 			if (args.RecordKnownSpell)
-				ent.Comp.KnownSpells.Add(args.CultAbility);
+				ent.Comp.KnownSpells.Add(args.CultAbilityId);
 			
 			// Apply damage if health drain > 0
-			if (args.CultAbility.HealthDrain > 0 && TryComp<DamageableComponent>(ent, out var damageableForDamage))
+			if (cultAbility.HealthDrain > 0 && TryComp<DamageableComponent>(ent, out var damageableForDamage))
 			{
 				_damageableSystem.TryChangeDamage((ent, damageableForDamage), appliedDamageSpecifier, true, origin: ent);
 			}
-			_audioSystem.PlayPvs(args.CultAbility.CarveSound, ent);
+			_audioSystem.PlayPvs(cultAbility.CarveSound, ent);
 		/* Rune logic
 		if (args.StandingOnRune)
 		{
@@ -284,30 +277,7 @@ public sealed partial class CultistSpellSystem : EntitySystem
 		comp.KnownSpells.Remove(GetSpell(id));
 	}
 
-/* Rune logic, to be uncommented when runes are added
-	/// <summary>
-	/// Checks if a cultist is currently standing on an EmpoweringRune.
-	/// </summary>
-	private bool IsStandingOnEmpoweringRune(EntityUid uid)
-	{
-		var coords = new EntityCoordinates(uid, default);
-		var location = coords.AlignWithClosestGridTile(entityManager: EntityManager, mapManager: _mapManager);
-		var gridUid = _transform.GetGrid(location);
-		if (!TryComp<MapGridComponent>(gridUid, out var grid))
-			return false;
 
-		var targetTile = _mapSystem.GetTileRef(gridUid.Value, grid, location);
-		foreach (var possibleEnt in _mapSystem.GetAnchoredEntities(gridUid.Value, grid, targetTile.GridIndices))
-		{
-			if (_runeQuery.HasComponent(possibleEnt))
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-*/
 	/// <summary>
 	/// Removes actions that match spells in the cultist's KnownSpells list.
 	/// This is called when adding a new spell while not on an empowering rune.
@@ -430,8 +400,6 @@ public sealed partial class CultistSpellSystem : EntitySystem
 			return;
 		}
 
-		float empDamage = 5000f;  // EMP damage for borgs
-		float empDuration = 12f;  // EMP duration in seconds
 		int selfStunTime = 4;
 
 		// Holy protection repels cult magic
@@ -467,10 +435,12 @@ public sealed partial class CultistSpellSystem : EntitySystem
 				_stun.TryKnockdown((target, crawlerForStun), TimeSpan.FromSeconds(5), true);
 			}
 			
-			// Inject sleep chemicals (Nocturine + Chloral Hydrate)
+			// Inject sleep chemicals (Nocturine + Edge Essentia) and a small amount of MuteToxin.
+			// MuteToxin mutes for ~3 seconds (just until sleep kicks in); metabolism scale gives duration from amount.
 			var sleepSolution = new Solution();
 			sleepSolution.AddReagent((ProtoId<ReagentPrototype>)"Nocturine", FixedPoint2.New(15));  // 15u Nocturine
 			sleepSolution.AddReagent((ProtoId<ReagentPrototype>)"EdgeEssentia", FixedPoint2.New(5));  // 5u Edge Essentia
+			sleepSolution.AddReagent((ProtoId<ReagentPrototype>)"MuteToxin", FixedPoint2.New(0.15f));  // ~3s mute before sleep
 			
 			if (_solutionContainer.ResolveSolution(target, bloodstream.BloodSolutionName, ref bloodstream.BloodSolution, out _))
 			{
@@ -487,36 +457,8 @@ public sealed partial class CultistSpellSystem : EntitySystem
 			// Mark them for follow-up attacks
 			// disabled for now, follow up attacks work, but end up being too fancy and not really needed.
 			//EnsureComp<CultMarkedComponent>(target);
-			
-			// Added a manual mute, since I know upstream has a possible Nocturine debuff that makes it take effect slower.
-			// The intent is for this to work to kidnap any non-mindshielded crew member.
-			_statusEffect.TryAddStatusEffectDuration(target, (EntProtoId)"Muted", TimeSpan.FromSeconds(15));
-		}
-		else
-		{
-		// Fallback for entities without bloodstream
-		
-		// Apply EMP effects directly to the entity, and mute them.
-		_emp.DoEmpEffects(target, empDamage, TimeSpan.FromSeconds(empDuration));
-		_statusEffect.TryAddStatusEffectDuration(target, (EntProtoId)"Muted", TimeSpan.FromSeconds(empDuration));
 		}
 	}
-
-	// Disabled for now. May be re-enabled if balance needs it.
-	//private void OnMarkedAttacked(Entity<CultMarkedComponent> ent, ref AttackedEvent args)
-	//{
-	//	var advancedStaminaDamage = 100;
-	//	var advancedStunTime = 15;
-	//	if (HasComp<BloodCultRuneCarverComponent>(args.Used))
-	//	{
-	//		_stun.TryKnockdown(ent, TimeSpan.FromSeconds(advancedStunTime), true);
-	//		_stamina.TakeStaminaDamage(ent, advancedStaminaDamage, visual: false);
-	//		_stun.TryStun(ent, TimeSpan.FromSeconds(advancedStunTime), true);
-	//		_statusEffect.TryAddStatusEffect<MutedComponent>(ent, "Muted", TimeSpan.FromSeconds(advancedStunTime), false);
-	//		_entMan.RemoveComponent<CultMarkedComponent>(ent);
-	//		_audioSystem.PlayPvs(new SoundPathSpecifier("/Audio/Items/Defib/defib_zap.ogg"), ent, AudioParams.Default.WithVolume(-3f));
-	//	}
-	//}
 
 
 	private void OnTwistedConstruction(Entity<BloodCultistComponent> ent, ref EventCultistTwistedConstruction args)
@@ -636,99 +578,6 @@ public sealed partial class CultistSpellSystem : EntitySystem
 			args.Handled = true;
 			return;
 		}
-
-		// Check if target is a reinforced wall
-		/*if (TryComp<ConstructionComponent>(args.Target, out var construction) && 
-		    construction.Graph == "Girder" && 
-		    construction.Node == "reinforcedWall")
-		{
-			// Wall deconstruction doesn't consume spell charges
-			// Generate random chant for wall deconstruction
-			if (TryComp<CultistSpellComponent>(args.Action, out var actionComp))
-			{
-				var invocation = _bloodCultRules.GenerateChant(wordCount: 2);
-				_bloodCultRules.Speak(ent, invocation);
-				if (actionComp.CastSound != null)
-					_audioSystem.PlayPvs(actionComp.CastSound, ent);
-			}
-
-			// Start do-after for wall deconstruction
-			var doAfterArgs = new DoAfterArgs(EntityManager, ent, TimeSpan.FromSeconds(3), 
-				new TwistedConstructionDoAfterEvent(args.Target), ent, target: args.Target)
-			{
-				BreakOnMove = true,
-				BreakOnDamage = true,
-				NeedHand = false,
-			};
-
-			_doAfter.TryStartDoAfter(doAfterArgs);
-			args.Handled = true;
-			return;
-		}*/
-
-		// Check if target is a reinforced girder
-		/*if (TryComp<ConstructionComponent>(args.Target, out var girderConstruction) && 
-		    girderConstruction.Graph == "Girder" && 
-		    girderConstruction.Node == "reinforcedGirder")
-		{
-			// Girder downgrade doesn't consume spell charges
-			// Generate random chant for girder deconstruction
-			if (TryComp<CultistSpellComponent>(args.Action, out var actionComp))
-			{
-				var invocation = _bloodCultRules.GenerateChant(wordCount: 2);
-				_bloodCultRules.Speak(ent, invocation);
-				if (actionComp.CastSound != null)
-					_audioSystem.PlayPvs(actionComp.CastSound, ent);
-			}
-
-			// Start do-after for reinforced girder downgrade
-			var doAfterArgs = new DoAfterArgs(EntityManager, ent, TimeSpan.FromSeconds(2), 
-				new TwistedConstructionDoAfterEvent(args.Target), ent, target: args.Target)
-			{
-				BreakOnMove = true,
-				BreakOnDamage = true,
-				NeedHand = false,
-			};
-
-			_doAfter.TryStartDoAfter(doAfterArgs);
-			args.Handled = true;
-			return;
-		}*/
 	}
-
-	/*private void OnTwistedConstructionDoAfter(Entity<BloodCultistComponent> ent, ref TwistedConstructionDoAfterEvent args)
-	{
-		if (args.Cancelled || !TryComp<ConstructionComponent>(args.Target, out var construction))
-			return;
-
-		// Verify it's a valid target (reinforced wall or reinforced girder)
-		if (construction.Graph != "Girder" || 
-		    (construction.Node != "reinforcedWall" && construction.Node != "reinforcedGirder"))
-			return;
-
-		// Don't consume spell charges for wall deconstruction - only for plasteel conversion
-		var targetCoords = Transform(args.Target).Coordinates;
-
-		if (construction.Node == "reinforcedWall")
-		{
-			// Reinforced wall -> reinforced girder
-			// Spawn a stack of 2 plasteel sheets (the amount to upgrade girder to reinforced girder)
-			// Use StackSystem.Spawn to properly initialize the stack for client-side rendering
-			_stackSystem.Spawn(2, new ProtoId<StackPrototype>("Plasteel"), targetCoords);
-
-			// Change the wall to a reinforced girder (this will spawn the 2 plasteel from the wall plating)
-			// The construction graph automatically handles spawning materials when deconstructing
-			_construction.ChangeNode(args.Target, ent, "reinforcedGirder", performActions: true, construction: construction);
-		}
-		else if (construction.Node == "reinforcedGirder")
-		{
-			// Reinforced girder -> regular girder
-			// Spawn a stack of 2 plasteel sheets (the amount used to upgrade to reinforced girder)
-			// Use StackSystem.Spawn to properly initialize the stack for client-side rendering
-			_stackSystem.Spawn(2, new ProtoId<StackPrototype>("Plasteel"), targetCoords);
-
-			// Change the reinforced girder to a regular girder
-			_construction.ChangeNode(args.Target, ent, "girder", performActions: true, construction: construction);
-		}
-	}*/
 }
+

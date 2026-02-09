@@ -28,7 +28,6 @@ using Content.Server.Speech.Prototypes;
 using Content.Shared.BloodCult;
 using Content.Shared.BloodCult.Components;
 using Content.Shared.Roles.Components;
-using Content.Server.BloodCult.Components;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Mobs.Systems;
 using Content.Server.Administration.Systems;
@@ -162,30 +161,24 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 		}
 	}
 
-	[Dependency] private readonly SharedAudioSystem _audio = default!;
 	[Dependency] private readonly AntagSelectionSystem _antag = default!;
 	[Dependency] private readonly MindSystem _mind = default!;
 	[Dependency] private readonly RoleSystem _role = default!;
-	[Dependency] private readonly RejuvenateSystem _rejuvenate = default!;
 	[Dependency] private readonly PopupSystem _popupSystem = default!;
 	[Dependency] private readonly IRobustRandom _random = default!;
 	[Dependency] private readonly IGameTiming _timing = default!;
 	[Dependency] private readonly GameTicker _gameTicker = default!;
 	[Dependency] private readonly IPlayerManager _playerManager = default!;
 	[Dependency] private readonly ChatSystem _chat = default!;
-	[Dependency] private readonly SharedPhysicsSystem _physics = default!;
 	[Dependency] private readonly SharedJobSystem _jobs = default!;
 	[Dependency] private readonly RoundEndSystem _roundEnd = default!;
-	[Dependency] private readonly MobStateSystem _mobSystem = default!;
 	[Dependency] private readonly IChatManager _chatManager = default!;
 	[Dependency] private readonly AppearanceSystem _appearance = default!;
 	[Dependency] private readonly NpcFactionSystem _npcFaction = default!;
 	[Dependency] private readonly IAdminLogManager _adminLogger = default!;
 	[Dependency] private readonly IConsoleHost _consoleHost = default!;
 	//[Dependency] private readonly SharedTransformSystem _transformSystem = default!;
-	[Dependency] private readonly BloodCultMindShieldSystem _mindShield = default!;
-	[Dependency] private readonly SleepingSystem _sleeping = default!;
-	[Dependency] private readonly IPrototypeManager _proto = default!;
+	[Dependency] private readonly Content.Shared.BloodCult.Systems.BloodCultMindShieldSystem _mindShield = default!;
 	[Dependency] private readonly ActionContainerSystem _actionContainer = default!;
 	[Dependency] private readonly SharedPointLightSystem _pointLight = default!;
 	[Dependency] private readonly SharedUserInterfaceSystem _uiSystem = default!;
@@ -193,9 +186,6 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 	public readonly string CultComponentId = "BloodCultist";
 
 	private static readonly EntProtoId MindRole = "MindRoleCultist";
-
-	public static readonly ProtoId<NpcFactionPrototype> BloodCultistFactionId = "BloodCultist";
-    public static readonly ProtoId<NpcFactionPrototype> NanotrasenFactionId = "NanoTrasen";
 
 	public override void Initialize()
 	{
@@ -276,7 +266,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
         {
 			if (metaData.EntityPrototype != null &&
 				metaData.EntityPrototype.EditorSuffix != null &&
-				BloodCultRuleComponent.PossibleVeilLocations.Contains(metaData.EntityPrototype.ID))
+				metaData.EntityPrototype.ID.StartsWith(component.PossibleVeilBeaconPrefix, StringComparison.Ordinal))
 			{
 				var veilLoc = new WeakVeilLocation(
 					metaData.EntityPrototype.EditorSuffix, beaconUid,
@@ -420,8 +410,8 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 				UpdateCultHaloLight(traitor, true);
 			}
 
-			_npcFaction.RemoveFaction(traitor, NanotrasenFactionId, false);
-			_npcFaction.AddFaction(traitor, BloodCultistFactionId);
+			_npcFaction.RemoveFaction(traitor, BloodCultConstants.DefaultDeconversionFaction, false);
+			_npcFaction.AddFaction(traitor, BloodCultConstants.BloodCultistFactionId);
 
 			return true;
 		}
@@ -766,191 +756,6 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 		args.Append(Loc.GetString("cult-briefing-targets"));
     }
 
-/* Revive and sacrifice rune logic, to be added later
-
-	public void TryReviveCultist(EntityUid uid, BloodCultistComponent comp, ref ReviveRuneAttemptEvent args)
-	{
-		comp.ReviverUid = args.User;
-		comp.BeingRevived = true;
-	}
-
-	// todo: Make it not heal the cultist fully, or make them bleeding or something? Balancing issue.
-	private void _ReviveCultist(EntityUid uid, EntityUid? casterUid)
-	{
-		Speak(casterUid, Loc.GetString("cult-invocation-revive"));
-		_audio.PlayPvs(new SoundPathSpecifier("/Audio/Magic/staff_healing.ogg"), uid);
-		_rejuvenate.PerformRejuvenate(uid);
-	}
-	
-	public void TrySacrificeVictim(EntityUid uid, BloodCultistComponent comp, ref SacrificeRuneEvent args)
-	{
-		comp.Sacrifice = new  SacrificingData(args.Victim, args.Invokers);
-	}
-
-	private bool _SacrificeOffering(SacrificingData sacrifice, BloodCultRuleComponent component, EntityUid cultistUid)
-	{
-		if (HasComp<CultResistantComponent>(sacrifice.Victim))
-		{
-			_popupSystem.PopupEntity(
-				Loc.GetString("cult-invocation-fail-resisted"),
-				cultistUid, cultistUid, PopupType.MediumCaution
-			);
-			return false;
-		}
-		else if (sacrifice.Invokers.Length < component.CultistsToSacrifice)
-		{
-			_popupSystem.PopupEntity(
-				Loc.GetString("cult-invocation-fail"),
-				cultistUid, cultistUid, PopupType.MediumCaution
-			);
-			return false;
-		}
-	else
-	{
-		// Only make the minimum required number of cultists speak
-		int speakerCount = 0;
-		foreach (EntityUid invoker in sacrifice.Invokers)
-		{
-			if (speakerCount >= component.CultistsToSacrifice)
-				break;
-			
-			Speak(invoker, Loc.GetString("cult-invocation-offering"));
-			speakerCount++;
-		}
-
-		if (_SacrificeVictim(sacrifice.Victim, cultistUid))
-		{
-			return true;
-		}
-	}
-	return false;
-	}
-
-	private bool _SacrificeVictim(EntityUid uid, EntityUid? casterUid)
-	{
-		// Remember to use coordinates to play audio if the entity is about to vanish.
-		EntityUid? mindId = CompOrNull<MindContainerComponent>(uid)?.Mind;
-		MindComponent? mindComp = CompOrNull<MindComponent>(mindId);
-		if (mindId != null && mindComp != null)
-		{
-			var coordinates = Transform(uid).Coordinates;
-			
-			// Check if the victim is Hamlet to spawn hamstone instead of soulstone
-			// Get speech component and accent component BEFORE gibbing the body
-			var victimMeta = MetaData(uid);
-			var isHamlet = victimMeta.EntityPrototype?.ID == "MobHamsterHamlet";
-			SpeechComponent? victimSpeech = null;
-			ReplacementAccentComponent? victimAccent = null;
-			if (isHamlet)
-			{
-				TryComp<SpeechComponent>(uid, out victimSpeech);
-				TryComp<ReplacementAccentComponent>(uid, out victimAccent);
-			}
-			
-			_audio.PlayPvs(new SoundPathSpecifier("/Audio/Magic/disintegrate.ogg"), coordinates);
-			var soulstonePrototype = isHamlet ? "CultHamstone" : "CultSoulStone";
-			
-			QueueDel(uid);
-			var soulstone = Spawn(soulstonePrototype, coordinates);
-			_mind.TransferTo((EntityUid)mindId, soulstone, mind:mindComp);
-			
-			// Ensure soulstone is aligned with blood cult faction (not crew)
-			var soulstoneFactionComp = EnsureComp<NpcFactionMemberComponent>(soulstone);
-			_npcFaction.ClearFactions((soulstone, soulstoneFactionComp), false);
-			_npcFaction.AddFaction((soulstone, soulstoneFactionComp), BloodCultistFactionId);
-			
-			// Preserve speech component and speech restrictions (ReplacementAccentComponent) from Hamlet if applicable
-			if (isHamlet && victimSpeech != null)
-			{
-				CopyComp(uid, soulstone, victimSpeech);
-				// Copy ReplacementAccentComponent if it exists (preserves speech restrictions like cognizine requirement)
-				if (victimAccent != null)
-				{
-					CopyComp(uid, soulstone, victimAccent);
-				}
-			}
-			else
-			{
-				// Ensure the soulstone can speak but not move
-				EnsureComp<SpeechComponent>(soulstone);
-			}
-			EnsureComp<EmotingComponent>(soulstone);
-		
-		// Give the soulstone a physics push for visual effect
-		if (TryComp<PhysicsComponent>(soulstone, out var physics))
-		{
-			// Wake the physics body so it responds to the impulse
-			_physics.SetAwake((soulstone, physics), true);
-			
-			// Generate a random direction and speed (5-10 units/sec similar to a weak throw)
-			var randomDirection = _random.NextVector2();
-			var speed = _random.NextFloat(5f, 10f);
-			var impulse = randomDirection * speed * physics.Mass;
-			_physics.ApplyLinearImpulse(soulstone, impulse, body: physics);
-		}
-			
-			return true;
-		}
-		return false;
-	}
-
-	public void TryConvertVictim(EntityUid uid, BloodCultistComponent comp, ref ConvertRuneEvent args)
-	{
-		comp.Convert = new ConvertingData(args.Subject, args.Invokers);
-	}
-
-	private bool _ConvertOffering(ConvertingData convert, BloodCultRuleComponent component, EntityUid cultistUid)
-	{
-		if (HasComp<CultResistantComponent>(convert.Subject))
-		{
-			_popupSystem.PopupEntity(
-				Loc.GetString("cult-invocation-fail-resisted"),
-				cultistUid, cultistUid, PopupType.MediumCaution
-			);
-			return false;
-		}
-		else if (convert.Invokers.Length >= component.CultistsToConvert)
-		{
-			// Only make the minimum required number of cultists speak
-			int speakerCount = 0;
-			foreach (EntityUid invoker in convert.Invokers)
-			{
-				if (speakerCount >= component.CultistsToConvert)
-					break;
-				
-				Speak(invoker, Loc.GetString("cult-invocation-offering"));
-				speakerCount++;
-			}
-			
-			_ConvertVictim(convert.Subject, component);
-			return true;
-		}
-		else
-		{
-			_popupSystem.PopupEntity(
-				Loc.GetString("cult-invocation-fail"),
-				cultistUid, cultistUid, PopupType.MediumCaution
-			);
-			return false;
-		}
-	}
-
-	private void _ConvertVictim(EntityUid uid, BloodCultRuleComponent component)
-	{
-		_audio.PlayPvs(new SoundPathSpecifier("/Audio/Ambience/Antag/creepyshriek.ogg"), uid);
-		MakeCultist(uid, component);
-		_rejuvenate.PerformRejuvenate(uid);
-		
-		// Increment conversion counter
-		component.TotalConversions++;
-		
-		// Wake up sleeping players 
-		if (TryComp<SleepingComponent>(uid, out var sleeping))
-		{
-			_sleeping.TryWaking((uid, sleeping), force: true);
-		}
-	}
-*/
 	private void OnMindAdded(EntityUid uid, BloodCultistComponent cultist, MindAddedMessage args)
 	{
 		_TryAssignCultMind(uid);

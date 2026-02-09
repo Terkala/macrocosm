@@ -1,27 +1,17 @@
-using System.Collections.Frozen;
+using Content.Shared.NPC.Prototypes;
+using Robust.Shared.Prototypes;
 
-namespace Content.Shared.BloodCult
+namespace Content.Shared.BloodCult;
+
+/// <summary>
+/// Constants for Blood Cult
+/// </summary>
+public static class BloodCultConstants
 {
-	/// <summary>
-	/// Constants and shared data for the Blood Cult system
-	/// </summary>
-	public static class BloodCultConstants
-	{
-		/// <summary>
-		/// All reagent prototype IDs that count as blood for ritual sacrifice purposes.
-		/// This includes standard blood types from all species.
-		/// </summary>
-		public static readonly FrozenSet<string> SacrificeBloodReagents = new[]
-		{
-			"Blood",
-			"Slime",
-			"Sap",
-			"InsectBlood",
-			"CopperBlood",
-			"AmmoniaBlood",
-			"ZombieBlood",
-			"ChangelingBlood"
-		}.ToFrozenSet();
-	}
-}
+    public static readonly ProtoId<NpcFactionPrototype> BloodCultistFactionId = "BloodCultist";
 
+    /// <summary>
+    /// Faction to restore when deconverting a cultist who has no stored original faction (e.g. roundstart blood cultists).
+    /// </summary>
+    public static readonly ProtoId<NpcFactionPrototype> DefaultDeconversionFaction = "NanoTrasen";
+}

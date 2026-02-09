@@ -5,10 +5,13 @@ using Content.Shared.BloodCult;
 
 namespace Content.Client.BloodCult;
 
+/// <summary>
+/// Handles the commune UI for blood cultists.
+/// This commune UI is used to cause cult communications to mask as chanting to nearby people
+/// It's also used to control how loud that chanting is, so later stages of the cult speak audibly when using cult speech
+/// </summary>
 public sealed class BloodCultCommuneBoundUserInterface : BoundUserInterface
 {
-    //[Dependency] private readonly IPrototypeManager _protomanager = default!;
-
     [ViewVariables]
     private BloodCultCommuneWindow? _window;
 
@@ -41,12 +44,5 @@ public sealed class BloodCultCommuneBoundUserInterface : BoundUserInterface
         }
 
         _window.UpdateState(cast.Message);
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-
-        _window?.Close();
     }
 }

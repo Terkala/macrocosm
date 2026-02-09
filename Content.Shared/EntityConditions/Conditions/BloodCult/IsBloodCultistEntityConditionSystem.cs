@@ -1,16 +1,14 @@
 using Content.Shared.BloodCult;
-using Content.Shared.BloodCult.Components;
 using Content.Shared.EntityConditions;
 using JetBrains.Annotations;
 using Robust.Shared.Prototypes;
 
-namespace Content.Server.BloodCult.EntityEffects.EffectConditions;
+namespace Content.Shared.EntityConditions.Conditions.BloodCult;
 
 /// <summary>
 /// Condition that checks if an entity is a Blood Cultist.
 /// Used for effects that should only affect cultists (like holy smoke).
 /// </summary>
-/// <inheritdoc cref="EntityConditionSystem{T, TCondition}"/>
 [UsedImplicitly]
 public sealed partial class IsBloodCultistEntityConditionSystem : EntityConditionSystem<BloodCultistComponent, IsBloodCultist>
 {

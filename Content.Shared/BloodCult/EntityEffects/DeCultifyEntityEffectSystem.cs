@@ -1,15 +1,14 @@
 using Robust.Shared.Audio.Systems;
-using Robust.Shared.Audio;
-using Robust.Shared.Prototypes;
 using Content.Shared.EntityEffects;
 using Content.Shared.EntityEffects.Effects;
 using Content.Shared.BloodCult;
-using Content.Shared.BloodCult.Components;
 using Content.Shared.Damage.Systems;
 
-namespace Content.Server.BloodCult.EntityEffects.Effects;
+namespace Content.Shared.BloodCult.EntityEffects;
 
-/// <inheritdoc cref="EntityEffectSystem{T,TEffect}"/>
+/// <summary>
+/// Handles the effects when a cultist is deconverted
+/// </summary>
 public sealed partial class DeCultifyEntityEffectSystem : EntityEffectSystem<BloodCultistComponent, DeCultify>
 {
 	[Dependency] private readonly SharedAudioSystem _audio = default!;
@@ -28,15 +27,11 @@ public sealed partial class DeCultifyEntityEffectSystem : EntityEffectSystem<Blo
 		// If this application causes deconversion (crosses 100 threshold), play sound and knock down
 		if (oldDeCultification < 100.0f && newDeCultification >= 100.0f)
 		{
-			// Play holy sound
-			_audio.PlayPvs(
-				new SoundPathSpecifier("/Audio/Effects/holy.ogg"),
-				entity,
-				AudioParams.Default
-			);
+			if (args.Effect.DeconversionSound != null)
+				_audio.PlayPvs(args.Effect.DeconversionSound, entity, args.Effect.DeconversionSound.Params);
 
-			// Apply stamina damage to knock them down
-			_stamina.TakeStaminaDamage(entity, 100f, visual: false);
+			// Apply stamina damage to knock them down (SharedStaminaSystem handles prediction)
+			_stamina.TakeStaminaDamage(entity, args.Effect.DeconversionStaminaDamage, visual: false);
 		}
 	}
 }
