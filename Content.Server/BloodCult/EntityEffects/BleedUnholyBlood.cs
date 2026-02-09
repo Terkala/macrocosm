@@ -12,7 +12,9 @@ using Robust.Shared.GameObjects;
 
 namespace Content.Server.BloodCult.EntityEffects;
 
-/// <inheritdoc cref="EntityEffectSystem{T,TEffect}"/>
+/// <summary>
+/// System that handles the BleedUnholyBlood entity effect, which changes a cultist's blood to Unholy Blood.
+/// </summary>
 public sealed partial class BleedUnholyBloodEntityEffectSystem : EntityEffectSystem<BloodstreamComponent, BleedUnholyBlood>
 {
     [Dependency] private readonly BloodstreamSystem _bloodstream = default!;

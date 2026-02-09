@@ -14,7 +14,13 @@ using Content.Shared.BloodCult.Components;
 using Content.Shared.BloodCult.Prototypes;
 
 namespace Content.Client.BloodCult.UI;
-
+/// <summary>
+/// Radial menu popup for selecting a spell to memorize.
+/// When a player uses the ability to carve a spell into themselves, 
+/// pops up a radial menu to choose which of 3 spells to carve. 
+/// Same behavior with Empower runes, if they click the empower rune it
+/// opens the same radial menu and allows them to choose which spell to add.
+/// </summary>
 public sealed partial class SpellRadialMenu : RadialMenu
 {
     [Dependency] private readonly IEntitySystemManager _entitySystem = default!;

@@ -49,9 +49,15 @@ public sealed class BloodCultMeleeWeaponSystem : EntitySystem
 			args.Handled = true;
 
 		if (blockedByCultist)
-			RaiseLocalEvent(new BloodCultMeleeAllyBlockedEvent(args.User, args.Weapon));
+		{
+			var ev = new BloodCultMeleeAllyBlockedAttemptEvent(args.User, args.Weapon);
+			RaiseLocalEvent(args.Weapon, ref ev);
+		}
 
 		if (blockedByChaplain)
-			RaiseLocalEvent(new BloodCultMeleeChaplainBlockedEvent(args.User, args.Weapon));
+		{
+			var ev = new BloodCultMeleeChaplainBlockedAttemptEvent(args.User, args.Weapon);
+			RaiseLocalEvent(args.Weapon, ref ev);
+		}
 	}
 }

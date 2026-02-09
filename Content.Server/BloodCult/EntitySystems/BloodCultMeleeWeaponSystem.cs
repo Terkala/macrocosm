@@ -5,6 +5,7 @@ using Content.Shared.Popups;
 using Content.Server.Popups;
 using Content.Server.Hands.Systems;
 using Content.Shared.BloodCult;
+using Content.Shared.BloodCult.Components;
 
 namespace Content.Server.BloodCult.EntitySystems;
 
@@ -18,25 +19,31 @@ public sealed class BloodCultMeleeWeaponSystem : EntitySystem
 	public override void Initialize()
 	{
 		base.Initialize();
-		SubscribeLocalEvent<BloodCultMeleeAllyBlockedEvent>(OnAllyBlocked);
-		SubscribeLocalEvent<BloodCultMeleeChaplainBlockedEvent>(OnChaplainBlocked);
+		SubscribeLocalEvent<BloodCultMeleeWeaponComponent, BloodCultMeleeAllyBlockedAttemptEvent>(OnAllyBlocked);
+		SubscribeLocalEvent<BloodCultMeleeWeaponComponent, BloodCultMeleeChaplainBlockedAttemptEvent>(OnChaplainBlocked);
 	}
 
-	private void OnAllyBlocked(BloodCultMeleeAllyBlockedEvent ev)
+	private void OnAllyBlocked(Entity<BloodCultMeleeWeaponComponent> ent, ref BloodCultMeleeAllyBlockedAttemptEvent args)
 	{
+		if (args.Cancelled)
+			return;
+
 		_popupSystem.PopupEntity(
 			Loc.GetString("cult-attack-teamhit"),
-			ev.User, ev.User, PopupType.MediumCaution);
+			args.User, args.User, PopupType.MediumCaution);
 	}
 
-	private void OnChaplainBlocked(BloodCultMeleeChaplainBlockedEvent ev)
+	private void OnChaplainBlocked(Entity<BloodCultMeleeWeaponComponent> ent, ref BloodCultMeleeChaplainBlockedAttemptEvent args)
 	{
+		if (args.Cancelled)
+			return;
+
 		_popupSystem.PopupEntity(
 			Loc.GetString("cult-attack-repelled"),
-			ev.User, ev.User, PopupType.MediumCaution);
-		var coordinates = Transform(ev.User).Coordinates;
+			args.User, args.User, PopupType.MediumCaution);
+		var coordinates = Transform(args.User).Coordinates;
 		_audioSystem.PlayPvs(new SoundPathSpecifier("/Audio/Effects/holy.ogg"), coordinates);
 		var offsetRandomCoordinates = coordinates.Offset(_random.NextVector2(1f, 1.5f));
-		_hands.ThrowHeldItem(ev.User, offsetRandomCoordinates);
+		_hands.ThrowHeldItem(args.User, offsetRandomCoordinates);
 	}
 }
