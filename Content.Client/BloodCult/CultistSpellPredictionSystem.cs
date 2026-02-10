@@ -7,7 +7,7 @@ namespace Content.Client.BloodCult;
 
 /// <summary>
 /// Plays cast sound with prediction when spell actions are triggered so the performer gets immediate feedback.
-/// Authoritative spell logic remains in server CultistSpellSystem.
+/// Spell logic remains in server CultistSpellSystem.
 /// </summary>
 public sealed class CultistSpellPredictionSystem : EntitySystem
 {

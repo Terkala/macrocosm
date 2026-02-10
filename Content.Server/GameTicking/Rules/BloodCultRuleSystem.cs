@@ -89,12 +89,12 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 {
 	private const string JuggernautAccentPrototypeId = "juggernaut";
 	
-	private const string ActionCommune = "ActionCultistCommune";
-	private const string ActionStudyVeil = "ActionCultistStudyVeil";
-	private const string ActionSpellsSelect = "ActionCultistSpellsSelect";
-	private const string ActionSummonDagger = "ActionCultistSummonDagger";
+	private static readonly EntProtoId ActionCommune = "ActionCultistCommune";
+	private static readonly EntProtoId ActionStudyVeil = "ActionCultistStudyVeil";
+	private static readonly EntProtoId ActionSpellsSelect = "ActionCultistSpellsSelect";
+	private static readonly EntProtoId ActionSummonDagger = "ActionCultistSummonDagger";
 	
-	private enum BloodStage
+	private enum BloodStage : byte
 	{
 		Rise,
 		Veil
@@ -302,11 +302,11 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 	/// Checks if an action container already contains an action with the specified prototype ID.
 	/// Used to make sure it doesn't double-add  blood cult abilities
 	/// </summary>
-	private bool HasActionWithPrototype(ActionsContainerComponent container, string prototypeId)
+	private bool HasActionWithPrototype(ActionsContainerComponent container, EntProtoId prototypeId)
 	{
 		foreach (var actionId in container.Container.ContainedEntities)
 		{
-			if (MetaData(actionId).EntityPrototype?.ID == prototypeId)
+			if (MetaData(actionId).EntityPrototype?.ID == prototypeId.Id)
 				return true;
 		}
 		return false;
@@ -316,11 +316,11 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 	/// Checks if an actions component already contains an action with the specified prototype ID.
 	/// Used to make sure it doesn't double-add  blood cult abilities
 	/// </summary>
-	private bool HasActionWithPrototype(ActionsComponent actions, string prototypeId)
+	private bool HasActionWithPrototype(ActionsComponent actions, EntProtoId prototypeId)
 	{
 		foreach (var actionId in actions.Actions)
 		{
-			if (MetaData(actionId).EntityPrototype?.ID == prototypeId)
+			if (MetaData(actionId).EntityPrototype?.ID == prototypeId.Id)
 				return true;
 		}
 		return false;

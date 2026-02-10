@@ -6,6 +6,8 @@ namespace Content.Shared.EntityEffects.Effects.Transform;
 
 /// <summary>
 /// Plays a sound at the entity's coordinates.
+/// Used by blood cultists when they are burned by holy water.
+/// Can be used by other entities to play sounds at their coordinates.
 /// </summary>
 public sealed partial class PlaySoundEntityEffectSystem : EntityEffectSystem<TransformComponent, PlaySound>
 {

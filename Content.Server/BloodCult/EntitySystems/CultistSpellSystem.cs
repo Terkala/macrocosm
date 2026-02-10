@@ -131,7 +131,7 @@ public sealed partial class CultistSpellSystem : EntitySystem
 			_bloodCultRules.Speak(ent, invocation);
 		}
 
-		// play sound for others in PVS (performer hears via client prediction)
+		// play sound 
 		if (actionComp.CastSound != null)
 			_audioSystem.PlayPredicted(actionComp.CastSound, ent, ent);
 

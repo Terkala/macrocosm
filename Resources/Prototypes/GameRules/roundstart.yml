@@ -593,8 +593,8 @@
   - type: GameRule
     minPlayers: 20
   - type: BloodCultRule
-    possibleVeilBeaconPrefix: DefaultStationBeacon
-    cultBloodReagent: UnholyBlood
+    possibleVeilBeaconPrefix: DefaultStationBeacon #must be a valid beacon prefix used in mapping, stations already use these beacons
+    cultBloodReagent: UnholyBlood #must be a valid reagent prototype id
   - type: AntagSelection
     selectionTime: IntraPlayerSpawn
     definitions:

@@ -1185,7 +1185,6 @@
         ignoreResistances: false
         damage:
           types:
-            Holy: 1.0
             Heat: 0.1
         conditions:
         - !type:IsBloodCultist

@@ -54,8 +54,8 @@ public sealed class BloodCultistMetabolismSystem : EntitySystem
     {
         if (string.IsNullOrEmpty(component.OriginalBloodReagent))
         {
-            var originalBlood = GetDefaultBloodReagent(component);
-            if (TryGetPrototypeBloodReagent(uid, out var prototypeBlood, component.DefaultBloodReagent) && !string.IsNullOrEmpty(prototypeBlood))
+            var originalBlood = "Blood";
+            if (TryGetPrototypeBloodReagent(uid, out var prototypeBlood, "Blood") && !string.IsNullOrEmpty(prototypeBlood))
                 originalBlood = prototypeBlood;
             else if (bloodstream.BloodReferenceSolution.Contents.Count > 0)
                 originalBlood = bloodstream.BloodReferenceSolution.Contents.First().Reagent.Prototype.ToString();
@@ -106,16 +106,11 @@ public sealed class BloodCultistMetabolismSystem : EntitySystem
     private string GetRestoreReagent(EntityUid uid, BloodCultistComponent component)
     {
         var restoreReagent = component.OriginalBloodReagent;
-        if (string.IsNullOrEmpty(restoreReagent) && TryGetPrototypeBloodReagent(uid, out var prototypeReagent, component.DefaultBloodReagent) && !string.IsNullOrEmpty(prototypeReagent))
+        if (string.IsNullOrEmpty(restoreReagent) && TryGetPrototypeBloodReagent(uid, out var prototypeReagent, "Blood") && !string.IsNullOrEmpty(prototypeReagent))
             restoreReagent = prototypeReagent;
         if (string.IsNullOrEmpty(restoreReagent))
-            restoreReagent = GetDefaultBloodReagent(component);
+            restoreReagent = "Blood";
         return restoreReagent;
-    }
-
-    private static string GetDefaultBloodReagent(BloodCultistComponent component)
-    {
-        return string.IsNullOrEmpty(component.DefaultBloodReagent) ? "Blood" : component.DefaultBloodReagent;
     }
 
     private bool TryGetPrototypeBloodReagent(EntityUid uid, out string bloodReagent, string? defaultReagent = null)
