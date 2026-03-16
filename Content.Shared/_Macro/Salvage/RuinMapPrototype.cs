@@ -3,7 +3,7 @@ using Robust.Shared.Utility;
 
 namespace Content.Shared.Salvage;
 
-[Prototype("ruinMap")]
+[Prototype]
 public sealed partial class RuinMapPrototype : IPrototype
 {
     [ViewVariables] [IdDataField] public string ID { get; private set; } = default!;

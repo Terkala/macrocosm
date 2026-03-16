@@ -6,7 +6,7 @@ namespace Content.Shared.Salvage;
 /// <summary>
 /// Prototype for configuring debris entities that spawn on salvage ruins.
 /// </summary>
-[Prototype("salvageRuinDebris")]
+[Prototype]
 public sealed partial class SalvageRuinDebrisPrototype : IPrototype
 {
     [ViewVariables]

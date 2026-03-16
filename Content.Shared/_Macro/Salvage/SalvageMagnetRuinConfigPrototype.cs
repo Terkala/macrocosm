@@ -6,7 +6,7 @@ namespace Content.Shared.Salvage;
 /// Configuration for salvage magnet ruin generation, including damage simulation parameters.
 /// These are all overwritten by salvage_magnet_ruin_config.yml in the Resources/Prototypes/Procedural folder.
 /// </summary>
-[Prototype("salvageMagnetRuinConfig")]
+[Prototype]
 public sealed partial class SalvageMagnetRuinConfigPrototype : IPrototype
 {
     [ViewVariables] [IdDataField] public string ID { get; private set; } = default!;
