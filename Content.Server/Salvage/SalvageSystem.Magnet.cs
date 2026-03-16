@@ -31,6 +31,8 @@ public sealed partial class SalvageSystem
     [Dependency] private readonly SalvageRuinGeneratorSystem _ruinGenerator = default!; // Macro
 
     private static readonly ProtoId<RadioChannelPrototype> MagnetChannel = "Supply";
+    private static readonly ProtoId<DamageTypePrototype> StructuralDamageType = "Structural";
+    private static readonly ProtoId<BiomeTemplatePrototype> SpaceRuinBiome = "SpaceRuin";
 
     private EntityQuery<SalvageMobRestrictionsComponent> _salvMobQuery;
     private EntityQuery<MobStateComponent> _mobStateQuery;
@@ -368,7 +370,7 @@ public sealed partial class SalvageSystem
                         TryComp<DamageableComponent>(windowEntity, out _))
                     {
                         var damage = new DamageSpecifier(
-                            _prototypeManager.Index<DamageTypePrototype>("Structural"),
+                            _prototypeManager.Index(StructuralDamageType),
                             FixedPoint2.New(25));
                         _damageable.TryChangeDamage(windowEntity, damage);
                     }
@@ -488,7 +490,7 @@ public sealed partial class SalvageSystem
             ruinResult.WallEntities.Select(w => w.Position)
                 .Concat(ruinResult.WindowEntities.Select(w => w.Position)));
 
-        if (!_prototypeManager.TryIndex<BiomeTemplatePrototype>("SpaceRuin", out var ruinTemplate))
+        if (!_prototypeManager.TryIndex(SpaceRuinBiome, out var ruinTemplate))
             return;
 
         var layers = ruinTemplate.Layers;
