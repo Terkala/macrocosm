@@ -12,4 +12,9 @@ public partial interface IBiomeWorldLayer : IBiomeLayer
     /// What tiles we're allowed to spawn on, real or biome.
     /// </summary>
     List<ProtoId<ContentTileDefinition>> AllowedTiles { get; }
+
+    /// <summary>
+    /// When true, allows spawning on any floor tile regardless of AllowedTiles.
+    /// </summary>
+    bool AllowAllTiles { get; } // Macro - allow all tiles
 }

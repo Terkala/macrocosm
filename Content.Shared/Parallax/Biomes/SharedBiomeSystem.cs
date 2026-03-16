@@ -21,7 +21,6 @@ public abstract class SharedBiomeSystem : EntitySystem
 
     protected const byte ChunkSize = 8;
 
-    private static readonly ProtoId<ContentTileDefinition> AllTiles = new("all"); // Macro - All as an option to allow all floor tile types
     private T Pick<T>(List<T> collection, float value)
     {
         // Listen I don't need this exact and I'm too lazy to finetune just for random ent picking.
@@ -226,7 +225,7 @@ public abstract class SharedBiomeSystem : EntitySystem
                 case BiomeDummyLayer:
                     continue;
                 case IBiomeWorldLayer worldLayer:
-                    if (!worldLayer.AllowedTiles.Contains(AllTiles) && !worldLayer.AllowedTiles.Contains(tileId)) //Macro - Allow "all" as an option for allowed tiles
+                    if (!worldLayer.AllowAllTiles && !worldLayer.AllowedTiles.Contains(tileId)) // Macro - allow all tiles
                         continue;
 
                     break;
@@ -302,7 +301,7 @@ public abstract class SharedBiomeSystem : EntitySystem
                 case BiomeDummyLayer:
                     continue;
                 case IBiomeWorldLayer worldLayer:
-                    if (!worldLayer.AllowedTiles.Contains(AllTiles) && !worldLayer.AllowedTiles.Contains(tileId)) //Macro - Allow "all" as an option for allowed tiles
+                    if (!worldLayer.AllowAllTiles && !worldLayer.AllowedTiles.Contains(tileId)) // Macro - allow all tiles
                         continue;
 
                     break;
