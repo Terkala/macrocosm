@@ -1,0 +1,7 @@
+- type: weightedRandom
+  id: SalvageMagnetOfferings
+  weights:
+    Asteroid: 4.5
+    #Debris: 3.5 # Ruins are a replacement for debris, enable one or the other
+    Ruin: 3.5
+    Salvage: 2.0

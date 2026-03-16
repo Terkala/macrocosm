@@ -13,14 +13,10 @@ namespace Content.Shared.Salvage;
 public abstract partial class SharedSalvageSystem
 {
     private readonly List<SalvageMapPrototype> _salvageMaps = new();
-
-    private readonly Dictionary<ISalvageMagnetOffering, float> _offeringWeights = new()
-    {
-        { new AsteroidOffering(), 4.5f },
-        { new DebrisOffering(), 3.5f },
-        { new SalvageOffering(), 2.0f },
-    };
-
+    private readonly List<RuinMapPrototype> _ruinMaps = new();
+// Macro start
+    private readonly ProtoId<WeightedRandomPrototype> _magnetOfferingWeights = "SalvageMagnetOfferings";
+// Macro end
     private readonly List<ProtoId<DungeonConfigPrototype>> _asteroidConfigs = new()
     {
         "BlobAsteroid",
@@ -41,11 +37,13 @@ public abstract partial class SharedSalvageSystem
     public ISalvageMagnetOffering GetSalvageOffering(int seed)
     {
         var rand = new System.Random(seed);
+// Macro start, making it so the offering is defined in YML
+        var offeringWeights = _proto.Index(_magnetOfferingWeights);
+        var typeId = offeringWeights.Pick(rand);
 
-        var type = SharedRandomExtensions.Pick(_offeringWeights, rand);
-        switch (type)
+        switch (typeId)
         {
-            case AsteroidOffering:
+            case "Asteroid":
                 var configId = _asteroidConfigs[rand.Next(_asteroidConfigs.Count)];
                 var configProto =_proto.Index(configId);
                 var layers = new Dictionary<string, int>();
@@ -78,13 +76,13 @@ public abstract partial class SharedSalvageSystem
                     DungeonConfig = config,
                     MarkerLayers = layers,
                 };
-            case DebrisOffering:
+            case "Debris":
                 var id = rand.Pick(_debrisConfigs);
                 return new DebrisOffering
                 {
                     Id = id
                 };
-            case SalvageOffering:
+            case "Salvage":
                 // Salvage map seed
                 _salvageMaps.Clear();
                 _salvageMaps.AddRange(_proto.EnumeratePrototypes<SalvageMapPrototype>());
@@ -96,8 +94,21 @@ public abstract partial class SharedSalvageSystem
                 {
                     SalvageMap = map,
                 };
+            case "Ruin":
+                _ruinMaps.Clear();
+                _ruinMaps.AddRange(_proto.EnumeratePrototypes<RuinMapPrototype>());
+                _ruinMaps.Sort((x, y) => string.Compare(x.ID, y.ID, StringComparison.Ordinal));
+                var ruinIndex = rand.Next(_ruinMaps.Count);
+                var ruin = _ruinMaps[ruinIndex];
+
+                return new RuinOffering
+                {
+                    RuinMap = ruin,
+                    StationName = string.Empty,
+                };
             default:
-                throw new NotImplementedException($"Salvage type {type} not implemented!");
+                throw new NotImplementedException($"Salvage magnet offering type {typeId} not implemented!");
         }
     }
 }
+// Macro end
