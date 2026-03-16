@@ -1,7 +1,7 @@
 # Ruin maps that can be used for salvage magnet ruin offerings.
 # These maps are used to extract floor and wall tiles using flood-fill.
 # Recommended to keep the total number of maps 5 or less. More maps will slow server startup. Make sure the maps selected are mostly station-like
-# Avoid any stations that have large amounts of asteroid walls or xeno-walls. The ruin system was not designed to parse those types of maps.
+# Avoid any stations that have large amounts of asteroid walls or xeno-walls. The ruin system was not designed to parse those types of maps. 
 
 - type: ruinMap
   id: Bagel
