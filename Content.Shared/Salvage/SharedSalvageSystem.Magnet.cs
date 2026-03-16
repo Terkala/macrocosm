@@ -13,8 +13,8 @@ namespace Content.Shared.Salvage;
 public abstract partial class SharedSalvageSystem
 {
     private readonly List<SalvageMapPrototype> _salvageMaps = new();
+// Macro start - Making it so the magnet offering is defined in yml
     private readonly List<RuinMapPrototype> _ruinMaps = new();
-// Macro start
     private readonly ProtoId<WeightedRandomPrototype> _magnetOfferingWeights = "SalvageMagnetOfferings";
 // Macro end
     private readonly List<ProtoId<DungeonConfigPrototype>> _asteroidConfigs = new()

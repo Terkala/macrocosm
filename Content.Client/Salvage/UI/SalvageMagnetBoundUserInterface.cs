@@ -128,6 +128,11 @@ public sealed class SalvageMagnetBoundUserInterface : BoundUserInterface
 
                     option.AddContent(salvContainer);
                     break;
+                // Macro start - Adding RuinOffering to the salvage system
+                case RuinOffering ruin:
+                    option.Title = Loc.GetString("salvage-magnet-ruin");
+                    break;
+                // Macro end
                 default:
                     throw new ArgumentOutOfRangeException();
             }

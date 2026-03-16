@@ -20,7 +20,6 @@ using Robust.Shared.Utility;
 
 namespace Content.Server.Salvage;
 
-[RegisterSystem]
 /// <summary>
 /// Generates ruins from station maps using cost-based flood-fill.
 /// Pre-builds cost maps at server startup for performance.
@@ -510,6 +509,32 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
             // Normalize coordinates relative to ruin origin
             var normalizedPos = new Vector2i(pos.X - originX, pos.Y - originY);
             tilesToPlace[normalizedPos] = tile;
+        }
+
+        // Ensure floor tiles exist under all wall positions (prevents floating walls).
+        // Walls adjacent to the region may not be in the region, so they might not have floor tiles.
+        foreach (var (wallPos, _) in adjacentWallEntities)
+        {
+            var normalizedWallPos = new Vector2i(wallPos.X - originX, wallPos.Y - originY);
+            if (tilesToPlace.ContainsKey(normalizedWallPos))
+                continue;
+
+            Tile floorTile;
+            if (coordinateMap.TryGetValue(wallPos, out var tileId) &&
+                _prototypeManager.TryIndex<ContentTileDefinition>(tileId, out var tileDef))
+            {
+                floorTile = new Tile(tileDef.TileId);
+            }
+            else if (_tileDefinitionManager.TryGetDefinition("Plating", out var platingDef))
+            {
+                floorTile = new Tile(platingDef.TileId);
+            }
+            else
+            {
+                continue;
+            }
+
+            tilesToPlace[normalizedWallPos] = floorTile;
         }
 
         // Add adjacent wall entities with normalized coordinates

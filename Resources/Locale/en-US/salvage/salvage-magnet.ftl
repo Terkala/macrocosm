@@ -40,6 +40,9 @@ dungeon-config-proto-ClusterAsteroid = Asteroid cluster
 dungeon-config-proto-SpindlyAsteroid = Asteroid spiral
 dungeon-config-proto-SwissCheeseAsteroid = Asteroid fragments
 
+# Ruins
+salvage-magnet-ruin = Station ruin
+
 # Wrecks
 salvage-map-wreck = Salvage wreck
 salvage-map-wreck-desc-size = Size:

@@ -2,9 +2,16 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Content.Server.Salvage.Magnet;
+using Content.Shared.Damage; // Macro
+using Content.Shared.Damage.Components; // Macro
+using Content.Shared.Damage.Prototypes; // Macro
+using Content.Shared.Damage.Systems; // Macro
+using Content.Shared.FixedPoint; // Macro
 using Content.Shared.Mobs.Components;
+using Content.Shared.Parallax.Biomes; // Macro
 using Content.Shared.Procedural;
 using Content.Shared.Radio;
+using Content.Shared.Salvage; // Macro
 using Content.Shared.Salvage.Magnet;
 using Robust.Shared.Exceptions;
 using Robust.Shared.Map;
@@ -15,6 +22,8 @@ namespace Content.Server.Salvage;
 public sealed partial class SalvageSystem
 {
     [Dependency] private readonly IRuntimeLog _runtimeLog = default!;
+    [Dependency] private readonly DamageableSystem _damageable = default!; // Macro
+    [Dependency] private readonly SalvageRuinGeneratorSystem _ruinGenerator = default!; // Macro
 
     private static readonly ProtoId<RadioChannelPrototype> MagnetChannel = "Supply";
 
@@ -305,13 +314,64 @@ public sealed partial class SalvageSystem
                 break;
             case SalvageOffering wreck:
                 var salvageProto = wreck.SalvageMap;
-
+// Macro Start - Adding RuinOffering to the salvage system  
                 if (!_loader.TryLoadGrid(salvMapXform.MapID, salvageProto.MapPath, out _))
                 {
-                    Report(magnet, MagnetChannel, "salvage-system-announcement-spawn-debris-disintegrated");
+                    Report(magnet.Owner, MagnetChannel, "salvage-system-announcement-spawn-debris-disintegrated");
                     _mapSystem.DeleteMap(salvMapXform.MapID);
                     return;
                 }
+
+                break;
+            case RuinOffering ruin:
+                var ruinConfigId = new ProtoId<SalvageMagnetRuinConfigPrototype>("Default");
+                _prototypeManager.TryIndex<Content.Shared.Salvage.SalvageMagnetRuinConfigPrototype>(ruinConfigId, out var ruinConfig);
+
+                var ruinResult = _ruinGenerator.GenerateRuin(ruin.RuinMap.MapPath, seed, ruinConfig);
+                if (ruinResult == null)
+                {
+                    Report(magnet.Owner, MagnetChannel, "salvage-system-announcement-spawn-no-debris-available");
+                    _mapSystem.DeleteMap(salvMapXform.MapID);
+                    return;
+                }
+
+                var ruinGrid = _mapManager.CreateGridEntity(salvMap);
+                _mapSystem.SetTiles(ruinGrid.Owner, ruinGrid.Comp, ruinResult.FloorTiles);
+
+                foreach (var (wallPos, wallProto) in ruinResult.WallEntities)
+                {
+                    var wallEntity = SpawnAtPosition(wallProto, new EntityCoordinates(ruinGrid.Owner, wallPos));
+                    var wallXform = Transform(wallEntity);
+                    if (!wallXform.Anchored)
+                        _transform.AnchorEntity((wallEntity, wallXform), (ruinGrid.Owner, ruinGrid.Comp), wallPos);
+                }
+
+                var windowDamageChance = ruinResult.Config?.WindowDamageChance ?? 0.0f;
+                var windowRand = new System.Random(seed);
+                foreach (var (windowPos, windowProto, windowRotation) in ruinResult.WindowEntities)
+                {
+                    var tileRef = _mapSystem.GetTileRef(ruinGrid.Owner, ruinGrid.Comp, windowPos);
+                    if (tileRef.Tile.IsEmpty)
+                        continue;
+
+                    var windowEntity = SpawnAttachedTo(windowProto, new EntityCoordinates(ruinGrid.Owner, windowPos), rotation: windowRotation);
+                    var windowXform = Transform(windowEntity);
+                    if (!windowXform.Anchored)
+                        _transform.AnchorEntity((windowEntity, windowXform), (ruinGrid.Owner, ruinGrid.Comp), windowPos);
+
+                    if (windowDamageChance > 0.0f && windowRand.NextSingle() < windowDamageChance &&
+                        TryComp<DamageableComponent>(windowEntity, out _))
+                    {
+                        var damage = new DamageSpecifier(
+                            _prototypeManager.Index<DamageTypePrototype>("Structural"),
+                            FixedPoint2.New(25));
+                        _damageable.TryChangeDamage(windowEntity, damage);
+                    }
+                }
+
+                var biome = EnsureComp<BiomeComponent>(ruinGrid.Owner);
+                _biome.SetSeed(ruinGrid.Owner, biome, seed);
+                _biome.SetTemplate(ruinGrid.Owner, biome, _prototypeManager.Index<BiomeTemplatePrototype>("SpaceDebris"));
 
                 break;
             default:
@@ -338,13 +398,13 @@ public sealed partial class SalvageSystem
             bounds = bounds?.Union(childAABB) ?? childAABB;
 
             // Update mass scanner names as relevant.
-            if (offering is AsteroidOffering or DebrisOffering)
+            if (offering is AsteroidOffering or DebrisOffering or RuinOffering)
             {
                 _metaData.SetEntityName(mapChild, Loc.GetString("salvage-asteroid-name"));
                 _gravity.EnableGravity(mapChild);
             }
         }
-
+// Macro end
         var magnetXform = _xformQuery.GetComponent(magnet.Owner);
         var magnetGridUid = magnetXform.GridUid;
         var attachedBounds = new Box2Rotated();
