@@ -1,0 +1,73 @@
+# Ruin-specific biome template for salvage magnet ruins.
+# Mirrors SpaceDebris but only spawns loot/mob/decals (no walls/grilles).
+# Uses "all" to allow spawning on any floor tile (girders, plating, etc.).
+- type: biomeTemplate
+  id: SpaceRuin
+  layers:
+  # Decals - same ratios as SpaceDebris (DirtHeavy x3, DirtMedium x2, DirtLight x1)
+  - !type:BiomeDecalLayer
+    allowedTiles:
+    - all
+    threshold: -0.5
+    divisions: 1
+    noise:
+      seed: 1
+      frequency: 1
+    decals:
+    - DirtHeavy
+    - DirtHeavy
+    - DirtHeavy
+    - DirtMedium
+    - DirtMedium
+    - DirtLight
+  # Structures - threshold 0.45, same as SpaceDebris
+  - !type:BiomeEntityLayer
+    threshold: 0.45
+    noise:
+      seed: 1
+      noiseType: OpenSimplex2
+      fractalType: Ridged
+      octaves: 4
+      frequency: 0.065
+      gain: 2
+      lacunarity: 1.5
+    allowedTiles:
+    - all
+    entities:
+    - SalvageSpawnerStructuresVarious
+  # Scrap - threshold 0.2, same ratios as SpaceDebris
+  - !type:BiomeEntityLayer
+    allowedTiles:
+    - all
+    threshold: 0.2
+    noise:
+      seed: 1
+      frequency: 1
+    entities:
+    - SalvageSpawnerScrapValuable
+    - SalvageSpawnerScrapCommon
+    - SalvageSpawnerScrapCommon
+    - SalvageSpawnerScrapCommon
+    - SalvageSpawnerScrapCommon75
+  # Treasure - threshold 0.7, same ratios as SpaceDebris
+  - !type:BiomeEntityLayer
+    allowedTiles:
+    - all
+    threshold: 0.7
+    noise:
+      seed: 1
+      frequency: 1
+    entities:
+    - SalvageSpawnerTreasure
+    - SalvageSpawnerTreasure
+    - SalvageSpawnerTreasureValuable
+  # Mobs - threshold 0.925, same as SpaceDebris
+  - !type:BiomeEntityLayer
+    allowedTiles:
+    - all
+    threshold: 0.925
+    noise:
+      seed: 1
+      frequency: 1
+    entities:
+    - SalvageSpawnerMobMagnet75

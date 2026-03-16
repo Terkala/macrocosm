@@ -1,26 +1,31 @@
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Content.Server.Decals;
 using Content.Server.Salvage.Magnet;
 using Content.Shared.Damage; // Macro
 using Content.Shared.Damage.Components; // Macro
 using Content.Shared.Damage.Prototypes; // Macro
 using Content.Shared.Damage.Systems; // Macro
 using Content.Shared.FixedPoint; // Macro
+using Content.Shared.Maps;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Parallax.Biomes; // Macro
+using Content.Shared.Physics; // Macro
 using Content.Shared.Procedural;
 using Content.Shared.Radio;
 using Content.Shared.Salvage; // Macro
 using Content.Shared.Salvage.Magnet;
 using Robust.Shared.Exceptions;
 using Robust.Shared.Map;
+using Robust.Shared.Map.Components; //Macro
 using Robust.Shared.Prototypes;
 
 namespace Content.Server.Salvage;
 
 public sealed partial class SalvageSystem
 {
+    [Dependency] private readonly DecalSystem _decals = default!;
     [Dependency] private readonly IRuntimeLog _runtimeLog = default!;
     [Dependency] private readonly DamageableSystem _damageable = default!; // Macro
     [Dependency] private readonly SalvageRuinGeneratorSystem _ruinGenerator = default!; // Macro
@@ -369,9 +374,7 @@ public sealed partial class SalvageSystem
                     }
                 }
 
-                var biome = EnsureComp<BiomeComponent>(ruinGrid.Owner);
-                _biome.SetSeed(ruinGrid.Owner, biome, seed);
-                _biome.SetTemplate(ruinGrid.Owner, biome, _prototypeManager.Index<BiomeTemplatePrototype>("SpaceDebris"));
+                SpawnRuinBiomeEntities(ruinGrid.Owner, ruinGrid.Comp, ruinResult, seed);
 
                 break;
             default:
@@ -478,7 +481,48 @@ public sealed partial class SalvageSystem
 
         RaiseLocalEvent(ref active);
     }
+// Macro start - Adding mobs and loot to the salvage system via SpaceRuin biome template
+    private void SpawnRuinBiomeEntities(EntityUid gridUid, MapGridComponent grid, SalvageRuinGeneratorSystem.RuinResult ruinResult, int seed)
+    {
+        var blockedPositions = new HashSet<Vector2i>(
+            ruinResult.WallEntities.Select(w => w.Position)
+                .Concat(ruinResult.WindowEntities.Select(w => w.Position)));
 
+        if (!_prototypeManager.TryIndex<BiomeTemplatePrototype>("SpaceRuin", out var ruinTemplate))
+            return;
+
+        var layers = ruinTemplate.Layers;
+
+        foreach (var (pos, tile) in ruinResult.FloorTiles)
+        {
+            if (blockedPositions.Contains(pos))
+                continue;
+
+            var tileRef = _mapSystem.GetTileRef(gridUid, grid, pos);
+            if (tileRef.Tile.IsEmpty)
+                continue;
+
+            if (_biome.TryGetDecals(pos, layers, seed, (gridUid, grid), out var decals))
+            {
+                foreach (var decal in decals)
+                {
+                    _decals.TryAddDecal(decal.ID, new EntityCoordinates(gridUid, decal.Position), out _);
+                }
+            }
+
+            if (_biome.TryGetEntity(pos, layers, tileRef.Tile, seed, (gridUid, grid), out var entityProto))
+            {
+                if (!_anchorable.TileFree((gridUid, grid), pos, (int)CollisionGroup.MachineLayer, (int)CollisionGroup.MachineLayer))
+                    continue;
+
+                var entity = SpawnAtPosition(entityProto, new EntityCoordinates(gridUid, pos + grid.TileSizeHalfVector));
+                var xform = Transform(entity);
+                if (!xform.Anchored)
+                    _transform.AnchorEntity((entity, xform), (gridUid, grid), pos);
+            }
+        }
+    }
+// Macro end
     private bool TryGetSalvagePlacementLocation(Entity<SalvageMagnetComponent> magnet, MapId mapId, Box2Rotated attachedBounds, Box2 bounds, Angle worldAngle, out MapCoordinates coords, out Angle angle)
     {
         var attachedAABB = attachedBounds.CalcBoundingBox();
