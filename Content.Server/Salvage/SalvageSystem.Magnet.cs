@@ -1,3 +1,4 @@
+using System.Collections.Generic; // Macro
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ using Content.Shared.Salvage.Magnet;
 using Robust.Shared.Exceptions;
 using Robust.Shared.Map;
 using Robust.Shared.Map.Components; //Macro
+using Robust.Shared.Noise; // Macro
 using Robust.Shared.Prototypes;
 
 namespace Content.Server.Salvage;
@@ -31,8 +33,8 @@ public sealed partial class SalvageSystem
     [Dependency] private readonly SalvageRuinGeneratorSystem _ruinGenerator = default!; // Macro
 
     private static readonly ProtoId<RadioChannelPrototype> MagnetChannel = "Supply";
-    private static readonly ProtoId<DamageTypePrototype> StructuralDamageType = "Structural";
-    private static readonly ProtoId<BiomeTemplatePrototype> SpaceRuinBiome = "SpaceRuin";
+    private static readonly ProtoId<DamageTypePrototype> StructuralDamageType = "Structural"; // Macro
+    private static readonly ProtoId<BiomeTemplatePrototype> SpaceRuinBiome = "SpaceRuin"; // Macro
 
     private EntityQuery<SalvageMobRestrictionsComponent> _salvMobQuery;
     private EntityQuery<MobStateComponent> _mobStateQuery;
@@ -494,6 +496,7 @@ public sealed partial class SalvageSystem
             return;
 
         var layers = ruinTemplate.Layers;
+        var noiseCache = new Dictionary<int, FastNoiseLite>();
 
         foreach (var (pos, tile) in ruinResult.FloorTiles)
         {
@@ -504,7 +507,7 @@ public sealed partial class SalvageSystem
             if (tileRef.Tile.IsEmpty)
                 continue;
 
-            if (_biome.TryGetDecals(pos, layers, seed, (gridUid, grid), out var decals))
+            if (_biome.TryGetDecals(pos, layers, seed, (gridUid, grid), out var decals, noiseCache))
             {
                 foreach (var decal in decals)
                 {
@@ -512,7 +515,7 @@ public sealed partial class SalvageSystem
                 }
             }
 
-            if (_biome.TryGetEntity(pos, layers, tileRef.Tile, seed, (gridUid, grid), out var entityProto))
+            if (_biome.TryGetEntity(pos, layers, tileRef.Tile, seed, (gridUid, grid), out var entityProto, noiseCache))
             {
                 if (!_anchorable.TileFree((gridUid, grid), pos, (int)CollisionGroup.MachineLayer, (int)CollisionGroup.MachineLayer))
                     continue;
