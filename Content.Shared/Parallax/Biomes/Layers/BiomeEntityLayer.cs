@@ -12,7 +12,7 @@ public sealed partial class BiomeEntityLayer : IBiomeWorldLayer
     [DataField]
     public List<ProtoId<ContentTileDefinition>> AllowedTiles { get; private set; } = new();
 
-    /// <inheritdoc/>
+    // Macro - A flag to allow all tiles to be used for the entity layer
     [DataField]
     public bool AllowAllTiles { get; private set; } = false; // Macro - allow all tiles
 

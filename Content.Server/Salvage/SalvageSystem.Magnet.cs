@@ -27,7 +27,7 @@ namespace Content.Server.Salvage;
 
 public sealed partial class SalvageSystem
 {
-    [Dependency] private readonly DecalSystem _decals = default!;
+    [Dependency] private readonly DecalSystem _decals = default!; // Macro
     [Dependency] private readonly IRuntimeLog _runtimeLog = default!;
     [Dependency] private readonly DamageableSystem _damageable = default!; // Macro
     [Dependency] private readonly SalvageRuinGeneratorSystem _ruinGenerator = default!; // Macro
@@ -323,14 +323,13 @@ public sealed partial class SalvageSystem
                 break;
             case SalvageOffering wreck:
                 var salvageProto = wreck.SalvageMap;
-// Macro Start - Adding RuinOffering to the salvage system  
                 if (!_loader.TryLoadGrid(salvMapXform.MapID, salvageProto.MapPath, out _))
                 {
-                    Report(magnet.Owner, MagnetChannel, "salvage-system-announcement-spawn-debris-disintegrated");
+                    Report(magnet.Owner, MagnetChannel, "salvage-system-announcement-spawn-debris-disintegrated"); // Macro added a .Owner to the magnet
                     _mapSystem.DeleteMap(salvMapXform.MapID);
                     return;
                 }
-
+// Macro Start - Adding RuinOffering to the salvage system  
                 break;
             case RuinOffering ruin:
                 var ruinConfigId = new ProtoId<SalvageMagnetRuinConfigPrototype>("Default");
@@ -355,28 +354,7 @@ public sealed partial class SalvageSystem
                         _transform.AnchorEntity((wallEntity, wallXform), (ruinGrid.Owner, ruinGrid.Comp), wallPos);
                 }
 
-                var windowDamageChance = ruinResult.Config?.WindowDamageChance ?? 0.0f;
-                var windowRand = new System.Random(seed);
-                foreach (var (windowPos, windowProto, windowRotation) in ruinResult.WindowEntities)
-                {
-                    var tileRef = _mapSystem.GetTileRef(ruinGrid.Owner, ruinGrid.Comp, windowPos);
-                    if (tileRef.Tile.IsEmpty)
-                        continue;
-
-                    var windowEntity = SpawnAttachedTo(windowProto, new EntityCoordinates(ruinGrid.Owner, windowPos), rotation: windowRotation);
-                    var windowXform = Transform(windowEntity);
-                    if (!windowXform.Anchored)
-                        _transform.AnchorEntity((windowEntity, windowXform), (ruinGrid.Owner, ruinGrid.Comp), windowPos);
-
-                    if (windowDamageChance > 0.0f && windowRand.NextSingle() < windowDamageChance &&
-                        TryComp<DamageableComponent>(windowEntity, out _))
-                    {
-                        var damage = new DamageSpecifier(
-                            _prototypeManager.Index(StructuralDamageType),
-                            FixedPoint2.New(25));
-                        _damageable.TryChangeDamage(windowEntity, damage);
-                    }
-                }
+                SpawnRuinWindows(ruinGrid.Owner, ruinGrid.Comp, ruinResult, seed);
 
                 SpawnRuinBiomeEntities(ruinGrid.Owner, ruinGrid.Comp, ruinResult, seed);
 
@@ -384,7 +362,7 @@ public sealed partial class SalvageSystem
             default:
                 throw new ArgumentOutOfRangeException();
         }
-
+// Macro end
         Box2? bounds = null;
 
         if (salvMapXform.ChildCount == 0)
@@ -405,13 +383,13 @@ public sealed partial class SalvageSystem
             bounds = bounds?.Union(childAABB) ?? childAABB;
 
             // Update mass scanner names as relevant.
-            if (offering is AsteroidOffering or DebrisOffering or RuinOffering)
+            if (offering is AsteroidOffering or DebrisOffering or RuinOffering) // Macro added RuinOffering
             {
                 _metaData.SetEntityName(mapChild, Loc.GetString("salvage-asteroid-name"));
                 _gravity.EnableGravity(mapChild);
             }
         }
-// Macro end
+
         var magnetXform = _xformQuery.GetComponent(magnet.Owner);
         var magnetGridUid = magnetXform.GridUid;
         var attachedBounds = new Box2Rotated();
@@ -486,6 +464,39 @@ public sealed partial class SalvageSystem
         RaiseLocalEvent(ref active);
     }
 // Macro start - Adding mobs and loot to the salvage system via SpaceRuin biome template
+/// <summary>
+/// Spawns windows for a ruin. Damages the windows if they are supposed to be damaged.
+/// </summary>
+    private void SpawnRuinWindows(EntityUid gridUid, MapGridComponent grid, SalvageRuinGeneratorSystem.RuinResult ruinResult, int seed)
+    {
+        var windowDamageChance = ruinResult.Config?.WindowDamageChance ?? 0.0f;
+        var windowRand = new System.Random(seed);
+        foreach (var (windowPos, windowProto, windowRotation) in ruinResult.WindowEntities)
+        {
+            var tileRef = _mapSystem.GetTileRef(gridUid, grid, windowPos);
+            if (tileRef.Tile.IsEmpty)
+                continue;
+
+            var windowEntity = SpawnAttachedTo(windowProto, new EntityCoordinates(gridUid, windowPos), rotation: windowRotation);
+            var windowXform = Transform(windowEntity);
+            if (!windowXform.Anchored)
+                _transform.AnchorEntity((windowEntity, windowXform), (gridUid, grid), windowPos);
+
+            if (windowDamageChance > 0.0f && windowRand.NextSingle() < windowDamageChance &&
+                TryComp<DamageableComponent>(windowEntity, out _))
+            {
+                var damage = new DamageSpecifier(
+                    _prototypeManager.Index(StructuralDamageType),
+                    FixedPoint2.New(25));
+                _damageable.TryChangeDamage(windowEntity, damage);
+            }
+        }
+    }
+
+/// <summary>
+/// Spawns biome entities for a ruin.
+/// Which are the loot and the mobs that spawn randomly. As well as the dirt decals
+/// </summary>
     private void SpawnRuinBiomeEntities(EntityUid gridUid, MapGridComponent grid, SalvageRuinGeneratorSystem.RuinResult ruinResult, int seed)
     {
         var blockedPositions = new HashSet<Vector2i>(
@@ -528,6 +539,7 @@ public sealed partial class SalvageSystem
         }
     }
 // Macro end
+
     private bool TryGetSalvagePlacementLocation(Entity<SalvageMagnetComponent> magnet, MapId mapId, Box2Rotated attachedBounds, Box2 bounds, Angle worldAngle, out MapCoordinates coords, out Angle angle)
     {
         var attachedAABB = attachedBounds.CalcBoundingBox();

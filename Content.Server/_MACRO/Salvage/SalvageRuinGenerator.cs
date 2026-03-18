@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using Content.Server.GameTicking.Events;
 using Content.Shared.Maps;
 using Content.Shared.Salvage;
 using Robust.Shared.EntitySerialization.Systems;
@@ -26,13 +27,16 @@ namespace Content.Server.Salvage;
 /// </summary>
 public sealed class SalvageRuinGeneratorSystem : EntitySystem
 {
+    
+    
+    [Dependency] private readonly ILogManager _logManager = default!;
     [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
     [Dependency] private readonly ITileDefinitionManager _tileDefinitionManager = default!;
     [Dependency] private readonly MapLoaderSystem _mapLoader = default!;
-    [Dependency] private readonly ILogManager _logManager = default!;
+    
+    
 
     private ISawmill _sawmill = default!;
-    private bool _attemptedPrebuild = false;
 
     /// <summary>
     /// Cached map data for each ruin map. Built at server startup.
@@ -41,6 +45,13 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
 
     /// <summary>
     /// Cached data for a map, including cost map, coordinate map, wall entities, and window entities.
+    /// The reason we're doing this is to avoid having to parse the map file every time we want to generate a ruin.
+    /// This also allows us to parse the map file once, making the large performance impact only happen at server startup.
+    /// Parameters: CostMap, CoordinateMap, WallEntities, WindowEntities
+    /// CostMap: A dictionary of Vector2i and int. The Vector2i is the position of the tile, and the int is the cost of the tile.
+    /// CoordinateMap: A dictionary of Vector2i and string. The Vector2i is the position of the tile, and the string is the prototype id of the tile.
+    /// WallEntities: A list of (Vector2i, string PrototypeId). The Vector2i is the position of the wall, and the string PrototypeId is the prototype id of the wall.
+    /// WindowEntities: A list of (Vector2i, string PrototypeId, Angle Rotation). The Vector2i is the position of the window, the string PrototypeId is the prototype id of the window, and the Angle Rotation is the rotation of the window.
     /// </summary>
     private sealed class CachedMapData
     {
@@ -71,29 +82,19 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
         
         // Subscribe to prototype reload events for hot reloading
         SubscribeLocalEvent<PrototypesReloadedEventArgs>(OnPrototypesReloaded);
+        SubscribeLocalEvent<RoundStartingEvent>(OnRoundStart);
     }
 
-    public override void Update(float frameTime)
+    private void OnRoundStart(RoundStartingEvent ev)
     {
-        base.Update(frameTime);
-        
-        // Try to prebuild cost maps on first tick when all systems are guaranteed ready
-        if (!_attemptedPrebuild)
-        {
-            _attemptedPrebuild = true;
-            
-            var ruinMaps = _prototypeManager.EnumeratePrototypes<RuinMapPrototype>().ToList();
-            if (ruinMaps.Count > 0)
-            {
-                _sawmill.Info("[SalvageRuinGenerator] Building cost maps for ruin maps on first tick...");
-                PrebuildCostMaps();
-            }
-        }
+        // Prebuild on round start when everything is initialized; guard in PrebuildCostMaps prevents double-build.
+        PrebuildCostMaps();
     }
 
     private void OnPrototypesReloaded(PrototypesReloadedEventArgs args)
     {
-        // Build cost maps when prototypes are first loaded, or rebuild if RuinMapPrototype was modified
+        // Prebuild cost maps when prototypes are first loaded, or rebuild if RuinMapPrototype was modified.
+        // If this event fires before we subscribe (e.g. during content init), GenerateRuin builds on-demand.
         var isFirstLoad = _cachedMapData.Count == 0;
         var wasModified = args.WasModified<RuinMapPrototype>();
         
@@ -117,6 +118,12 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
     /// </summary>
     private void PrebuildCostMaps()
     {
+        if (_cachedMapData.Count > 0)
+        {
+            _sawmill.Debug("[SalvageRuinGenerator] Cost maps already pre-built, skipping");
+            return;
+        }
+
         _sawmill.Info("[SalvageRuinGenerator] Pre-building cost maps for ruin maps...");
         
         var ruinMaps = _prototypeManager.EnumeratePrototypes<RuinMapPrototype>().ToList();
@@ -284,16 +291,16 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
             return false;
         }
 
-        // Parse wall entities
-        var wallEntities = ParseWallEntities(entitiesNode, firstGridUid);
-
-        // Parse window entities
-        var windowEntities = ParseWindowEntities(entitiesNode, firstGridUid);
-
-        // Get default config for cost map building (use "Default" if available, otherwise null for defaults)
+        // Get default config for cost map building and entity parsing (use "Default" if available)
         var defaultConfigId = new ProtoId<SalvageMagnetRuinConfigPrototype>("Default");
         SalvageMagnetRuinConfigPrototype? defaultConfig = null;
         _prototypeManager.TryIndex(defaultConfigId, out defaultConfig);
+
+        // Parse wall entities (use default config's wall prototypes for identifying walls in map)
+        var wallEntities = ParseWallEntities(entitiesNode, firstGridUid, defaultConfig);
+
+        // Parse window entities (use default config's window prototypes for identifying windows in map)
+        var windowEntities = ParseWindowEntities(entitiesNode, firstGridUid, defaultConfig);
 
         // Build cost map (includes windows and walls in cost calculation)
         var costMap = BuildCostMap(coordinateMap, windowEntities, wallEntities, defaultConfig);
@@ -687,25 +694,32 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
     }
 
     /// <summary>
+    /// Gets the set of wall prototype IDs for map parsing. Wall definitions come from the YAML config.
+    /// </summary>
+    private HashSet<string> GetWallPrototypesSet(SalvageMagnetRuinConfigPrototype? config)
+    {
+        if (config == null)
+            _prototypeManager.TryIndex(new ProtoId<SalvageMagnetRuinConfigPrototype>("Default"), out config);
+
+        if (config == null || config.WallPrototypes.Count == 0)
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var proto in config.WallPrototypes)
+        {
+            set.Add(proto.Id);
+        }
+        return set;
+    }
+
+    /// <summary>
     /// Parses wall entities from the map file and returns their positions and prototype IDs.
     /// </summary>
-    private List<(Vector2i Position, string PrototypeId)> ParseWallEntities(SequenceDataNode entitiesNode, int gridUid)
+    private List<(Vector2i Position, string PrototypeId)> ParseWallEntities(SequenceDataNode entitiesNode, int gridUid, SalvageMagnetRuinConfigPrototype? config)
     {
         var wallEntities = new List<(Vector2i, string)>();
 
-        var wallPrototypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "WallSolid",
-            "WallReinforced",
-            "WallReinforcedRust",
-            "WallSolidRust",
-            // Diagonal walls
-            "WallSolidDiagonal",
-            "WallReinforcedDiagonal",
-            "WallShuttleDiagonal",
-            "WallPlastitaniumDiagonal",
-            "WallMiningDiagonal",
-        };
+        var wallPrototypes = GetWallPrototypesSet(config);
 
         foreach (var protoGroupNode in entitiesNode.Sequence.Cast<MappingDataNode>())
         {
@@ -770,11 +784,32 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
     }
 
     /// <summary>
+    /// Gets the set of window prototype IDs for map parsing. Window definitions come from the YAML config.
+    /// </summary>
+    private HashSet<string> GetWindowPrototypesSet(SalvageMagnetRuinConfigPrototype? config)
+    {
+        if (config == null)
+            _prototypeManager.TryIndex(new ProtoId<SalvageMagnetRuinConfigPrototype>("Default"), out config);
+
+        if (config == null || config.WindowPrototypes.Count == 0)
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var proto in config.WindowPrototypes)
+        {
+            set.Add(proto.Id);
+        }
+        return set;
+    }
+
+    /// <summary>
     /// Parses window entities from the map file and returns their positions, prototype IDs, and rotations.
     /// </summary>
-    private List<(Vector2i Position, string PrototypeId, Angle Rotation)> ParseWindowEntities(SequenceDataNode entitiesNode, int gridUid)
+    private List<(Vector2i Position, string PrototypeId, Angle Rotation)> ParseWindowEntities(SequenceDataNode entitiesNode, int gridUid, SalvageMagnetRuinConfigPrototype? config)
     {
         var windowEntities = new List<(Vector2i, string, Angle)>();
+
+        var windowPrototypes = GetWindowPrototypesSet(config);
 
         foreach (var protoGroupNode in entitiesNode.Sequence.Cast<MappingDataNode>())
         {
@@ -782,9 +817,8 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
                 continue;
 
             var protoId = protoNode.Value;
-            
-            // Check if this is a window entity (contains "Window" in the ID)
-            if (!IsWindowEntity(protoId))
+
+            if (!windowPrototypes.Contains(protoId))
                 continue;
 
             if (!protoGroupNode.TryGet("entities", out SequenceDataNode? entitiesInGroup))
@@ -857,22 +891,6 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
     }
 
     /// <summary>
-    /// Checks if a prototype ID represents a window entity.
-    /// </summary>
-    private bool IsWindowEntity(string prototypeId)
-    {
-        // Check for common window patterns
-        var id = prototypeId.ToLowerInvariant();
-        
-        // Include windows, windoors, and firelocks
-        return (id.Contains("window", StringComparison.OrdinalIgnoreCase) ||
-                id.Contains("windoor", StringComparison.OrdinalIgnoreCase) ||
-                id.Contains("firelock", StringComparison.OrdinalIgnoreCase)) &&
-               !id.Contains("frame", StringComparison.OrdinalIgnoreCase) && // Exclude frames/assemblies
-               !id.Contains("assembly", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
     /// Builds a cost map from coordinate map. Space tiles (missing from map) get cost from config (default 99).
     /// Window and wall entities at positions get appropriate cost based on type.
     /// </summary>
@@ -942,69 +960,45 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
 
     /// <summary>
     /// Gets the cost for a window entity based on its prototype ID.
+    /// Uses WindowCosts from config; longest matching pattern wins. Falls back to DefaultWindowCost.
     /// </summary>
     private int GetWindowCost(string prototypeId, SalvageMagnetRuinConfigPrototype? config = null)
     {
+        if (config == null || config.WindowCosts.Count == 0)
+            return config?.DefaultWindowCost ?? 4;
+
         var id = prototypeId.ToLowerInvariant();
-        
-        // Firelocks (treated as reinforced barriers)
-        if (id.Contains("firelock", StringComparison.OrdinalIgnoreCase))
+        var bestMatch = "";
+        foreach (var (pattern, _) in config.WindowCosts)
         {
-            return config?.ReinforcedWindowCost ?? 4;
+            if (pattern.Length > bestMatch.Length && id.Contains(pattern.ToLowerInvariant()))
+                bestMatch = pattern;
         }
-        
-        // Windoors (secure windoors are reinforced, regular windoors are not)
-        if (id.Contains("windoor", StringComparison.OrdinalIgnoreCase))
-        {
-            if (id.Contains("secure", StringComparison.OrdinalIgnoreCase))
-                return config?.ReinforcedWindowCost ?? 4;
-            else
-                return config?.RegularWindowCost ?? 2;
-        }
-        
-        // Directional Reinforced windows (most expensive)
-        if (id.Contains("directional", StringComparison.OrdinalIgnoreCase) && 
-            id.Contains("reinforced", StringComparison.OrdinalIgnoreCase))
-        {
-            return config?.ReinforcedWindowCost ?? 4;
-        }
-        
-        // Directional windows (regular)
-        if (id.Contains("directional", StringComparison.OrdinalIgnoreCase))
-        {
-            return config?.DirectionalWindowCost ?? 2;
-        }
-        
-        // Diagonal windows (treated similar to directional)
-        if (id.Contains("diagonal", StringComparison.OrdinalIgnoreCase))
-        {
-            if (id.Contains("reinforced", StringComparison.OrdinalIgnoreCase))
-                return config?.ReinforcedWindowCost ?? 4;
-            else
-                return config?.DirectionalWindowCost ?? 2;
-        }
-        
-        // Reinforced windows (non-directional)
-        if (id.Contains("reinforced", StringComparison.OrdinalIgnoreCase))
-        {
-            return config?.ReinforcedWindowCost ?? 4;
-        }
-        
-        // Regular windows
-        return config?.RegularWindowCost ?? 2;
+
+        if (bestMatch.Length > 0 && config.WindowCosts.TryGetValue(bestMatch, out var cost))
+            return cost;
+
+        return config.DefaultWindowCost;
     }
 
     /// <summary>
-    /// Checks if a tile is a wall based on its prototype ID.
+    /// Checks if a tile is a wall based on its tile definition ID.
+    /// Uses WallTileIds from config; wall tile definitions come from the YAML config.
     /// </summary>
-    private bool IsWallTile(string tileId)
+    private bool IsWallTile(string tileId, SalvageMagnetRuinConfigPrototype? config)
     {
-        return tileId.Equals("WallSolid", StringComparison.OrdinalIgnoreCase) ||
-               tileId.Equals("WallReinforced", StringComparison.OrdinalIgnoreCase) ||
-               tileId.Equals("WallReinforcedRust", StringComparison.OrdinalIgnoreCase) ||
-               tileId.Equals("WallSolidRust", StringComparison.OrdinalIgnoreCase) ||
-               tileId.Equals("WallSolidDiagonal", StringComparison.OrdinalIgnoreCase) ||
-               tileId.Equals("WallReinforcedDiagonal", StringComparison.OrdinalIgnoreCase);
+        if (config == null)
+            _prototypeManager.TryIndex(new ProtoId<SalvageMagnetRuinConfigPrototype>("Default"), out config);
+
+        if (config == null || config.WallTileIds.Count == 0)
+            return false;
+
+        foreach (var wallTileId in config.WallTileIds)
+        {
+            if (tileId.Equals(wallTileId, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -1012,23 +1006,27 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
     /// </summary>
     private int GetTileCost(string tileId, SalvageMagnetRuinConfigPrototype? config = null)
     {
-        if (IsWallTile(tileId))
-            return config?.WallCost ?? 6;
+        if (IsWallTile(tileId, config))
+            return config?.WallCost ?? 20;
 
-        if (tileId.Contains("DirectionalGlass", StringComparison.OrdinalIgnoreCase))
-            return config?.DirectionalGlassCost ?? 2;
+        if (config == null)
+            _prototypeManager.TryIndex(new ProtoId<SalvageMagnetRuinConfigPrototype>("Default"), out config);
 
-        if (tileId.Contains("ReinforcedGlass", StringComparison.OrdinalIgnoreCase))
-            return config?.ReinforcedGlassCost ?? 4;
+        if (config == null || config.TileCosts.Count == 0)
+            return config?.DefaultTileCost ?? 1;
 
-        if (tileId.Contains("Glass", StringComparison.OrdinalIgnoreCase) &&
-            !tileId.Contains("Directional", StringComparison.OrdinalIgnoreCase))
-            return config?.RegularGlassCost ?? 4;
+        var id = tileId.ToLowerInvariant();
+        var bestMatch = "";
+        foreach (var (pattern, _) in config.TileCosts)
+        {
+            if (pattern.Length > bestMatch.Length && id.Contains(pattern.ToLowerInvariant()))
+                bestMatch = pattern;
+        }
 
-        if (tileId.Contains("Grille", StringComparison.OrdinalIgnoreCase))
-            return config?.GrilleCost ?? 2;
+        if (bestMatch.Length > 0 && config.TileCosts.TryGetValue(bestMatch, out var cost))
+            return cost;
 
-        return config?.DefaultTileCost ?? 1;
+        return config.DefaultTileCost;
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System.Collections.Generic; // Macro
 using System.Threading.Tasks;
 using Content.Server.Parallax;
 using Content.Shared.Maps;
@@ -6,7 +6,7 @@ using Content.Shared.Parallax.Biomes;
 using Content.Shared.Procedural;
 using Content.Shared.Procedural.PostGeneration;
 using Robust.Shared.Map;
-using Robust.Shared.Noise;
+using Robust.Shared.Noise; // Macro
 using Robust.Shared.Utility;
 
 namespace Content.Server.Procedural.DungeonJob;
@@ -25,7 +25,7 @@ public sealed partial class DungeonJob
 
         var seed = random.Next();
         var xformQuery = _entManager.GetEntityQuery<TransformComponent>();
-        var noiseCache = new Dictionary<int, FastNoiseLite>();
+        var noiseCache = new Dictionary<int, FastNoiseLite>(); // Macro - Cache noise for each layer
 
         var tiles = _maps.GetAllTilesEnumerator(_gridUid, _grid);
         while (tiles.MoveNext(out var tileRef))
@@ -47,7 +47,7 @@ public sealed partial class DungeonJob
                 _maps.SetTile(_gridUid, _grid, node, tile.Value);
             }
 
-            if (biomeSystem.TryGetDecals(node, indexedBiome.Layers, seed, (_gridUid, _grid), out var decals, noiseCache))
+            if (biomeSystem.TryGetDecals(node, indexedBiome.Layers, seed, (_gridUid, _grid), out var decals, noiseCache)) // Macro - Cache noise
             {
                 foreach (var decal in decals)
                 {
@@ -55,7 +55,7 @@ public sealed partial class DungeonJob
                 }
             }
 
-            if (biomeSystem.TryGetEntity(node, indexedBiome.Layers, tile ?? tileRef.Value.Tile, seed, (_gridUid, _grid), out var entityProto, noiseCache))
+            if (biomeSystem.TryGetEntity(node, indexedBiome.Layers, tile ?? tileRef.Value.Tile, seed, (_gridUid, _grid), out var entityProto, noiseCache))  // Macro - Cache noise
             {
                 var ent = _entManager.SpawnEntity(entityProto, new EntityCoordinates(_gridUid, node + _grid.TileSizeHalfVector));
                 var xform = xformQuery.Get(ent);

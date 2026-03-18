@@ -13,6 +13,7 @@ public partial interface IBiomeWorldLayer : IBiomeLayer
     /// </summary>
     List<ProtoId<ContentTileDefinition>> AllowedTiles { get; }
 
+    // Macro - A flag to allow all tiles to be used for the world layer
     /// <summary>
     /// When true, allows spawning on any floor tile regardless of AllowedTiles.
     /// </summary>

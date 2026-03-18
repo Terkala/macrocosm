@@ -1,24 +1,73 @@
 # Configuration for salvage magnet ruin generation.
-# This controls flood-fill parameters and damage simulation.
+# Defaults in SalvageMagnetRuinConfigPrototype.cs are used when fields are omitted.
 
 - type: salvageMagnetRuinConfig
   id: Default
-  floodFillPoints: 25 #if you increase this, also increase the ruinSpawnDistance, otherwise the ruins will spawn ontop of the magnet
-  ruinSpawnDistance: 82  # Distance in tiles from magnet where ruins spawn
-  wallDestroyChance: 0.30 #chance of a wall being destroyed and not spawned
-  windowDamageChance: 0.10 #chance of a window being damaged
-  floorToLatticeChance: 0.15 #chance of a floor tile being replaced with lattice, makes it look more damaged
-  # Path costs for flood-fill algorithm (higher = more expensive to traverse)
-  # the way floodfill works, it costs this much to traverse each tile
+  floodFillPoints: 25
+  ruinSpawnDistance: 82
+  wallDestroyChance: 0.30
+  windowDamageChance: 0.10
+  floorToLatticeChance: 0.15
   wallCost: 20
-  directionalWindowCost: 10
-  reinforcedWindowCost: 10
-  regularWindowCost: 4
-  directionalGlassCost: 8
-  reinforcedGlassCost: 12
-  regularGlassCost: 8
-  grilleCost: 4
+  windowCosts:
+    firelock: 10
+    windoorsecure: 10
+    windoor: 4
+    reinforceddirectional: 10
+    directional: 6
+    reinforceddiagonal: 8
+    diagonal: 6
+    reinforced: 8
+  defaultWindowCost: 4
+  tileCosts:
+    directionalglass: 8
+    reinforcedglass: 12
+    glass: 8
+    grille: 4
   defaultTileCost: 1
-  spaceCost: 9999  # Space tiles (not in map) - very high cost makes them impassable
-  floodFillStages: 7  # Number of flood-fill stages to create irregular branching shapes. It does the flood fill this many times on the edges to construct the ruin.
+  spaceCost: 9999
+  floodFillStages: 7
+  wallTileIds:
+    - WallSolid
+    - WallReinforced
+    - WallReinforcedRust
+    - WallSolidRust
+    - WallSolidDiagonal
+    - WallReinforcedDiagonal
+  wallPrototypes:
+    - WallSolid
+    - WallReinforced
+    - WallReinforcedRust
+    - WallSolidRust
+    - WallSolidDiagonal
+    - WallReinforcedDiagonal
+    - WallShuttleDiagonal
+    - WallPlastitaniumDiagonal
+    - WallMiningDiagonal
+  windowPrototypes:
+    - Window
+    - WindowDirectional
+    - ReinforcedWindow
+    - WindowReinforcedDirectional
+    - WindowDiagonal
+    - ReinforcedWindowDiagonal
+    - TintedWindow
+    - WindowFrostedDirectional
+    - ShuttleWindow
+    - ShuttleWindowDiagonal
+    - PlastitaniumWindow
+    - PlastitaniumWindowDiagonal
+    - Windoor
+    - WindoorSecure
+    - WindoorPlasma
+    - WindoorSecurePlasma
+    - WindoorClockwork
+    - Firelock
+    - FirelockGlass
+    - FirelockEdge
+    - FirelockFrame
+    - WindoorAssembly
+    - WindoorAssemblySecure
+    - WindoorAssemblyPlasma
+    - WindoorAssemblySecurePlasma
 
