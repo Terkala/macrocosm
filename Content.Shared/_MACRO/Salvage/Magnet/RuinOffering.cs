@@ -1,4 +1,7 @@
-namespace Content.Shared.Salvage.Magnet;
+using Content.Shared._MACRO.Salvage;
+using Content.Shared.Salvage.Magnet;
+
+namespace Content.Shared._MACRO.Salvage.Magnet;
 
 /// <summary>
 /// Ruin offered for the magnet, generated from station maps.

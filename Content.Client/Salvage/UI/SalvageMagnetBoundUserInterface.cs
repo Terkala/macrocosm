@@ -1,5 +1,6 @@
 using System.Linq;
 using Content.Client.Message;
+using Content.Shared._MACRO.Salvage.Magnet; // Macro
 using Content.Shared.Salvage;
 using Content.Shared.Salvage.Magnet;
 using Robust.Client.UserInterface;

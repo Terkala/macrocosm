@@ -1,3 +1,5 @@
+using Content.Shared._MACRO.Salvage; // Macro
+using Content.Shared._MACRO.Salvage.Magnet; // Macro
 using Content.Shared.Destructible.Thresholds;
 using Content.Shared.Procedural;
 using Content.Shared.Procedural.DungeonLayers;

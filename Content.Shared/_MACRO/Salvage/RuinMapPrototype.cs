@@ -1,7 +1,7 @@
 using Robust.Shared.Prototypes;
 using Robust.Shared.Utility;
 
-namespace Content.Shared.Salvage;
+namespace Content.Shared._MACRO.Salvage;
 
 [Prototype]
 public sealed partial class RuinMapPrototype : IPrototype

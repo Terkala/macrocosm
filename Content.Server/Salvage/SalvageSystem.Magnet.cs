@@ -2,6 +2,7 @@ using System.Collections.Generic; // Macro
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Content.Server._MACRO.Salvage; // Macro
 using Content.Server.Decals; // Macro
 using Content.Server.Salvage.Magnet;
 using Content.Shared.Damage; // Macro
@@ -13,6 +14,8 @@ using Content.Shared.Maps; // Macro
 using Content.Shared.Mobs.Components;
 using Content.Shared.Parallax.Biomes; // Macro
 using Content.Shared.Physics; // Macro
+using Content.Shared._MACRO.Salvage; // Macro
+using Content.Shared._MACRO.Salvage.Magnet; // Macro
 using Content.Shared.Procedural;
 using Content.Shared.Radio;
 using Content.Shared.Salvage; // Macro
@@ -333,7 +336,7 @@ public sealed partial class SalvageSystem
                 break;
             case RuinOffering ruin:
                 var ruinConfigId = new ProtoId<SalvageMagnetRuinConfigPrototype>("Default");
-                _prototypeManager.TryIndex<Content.Shared.Salvage.SalvageMagnetRuinConfigPrototype>(ruinConfigId, out var ruinConfig);
+                _prototypeManager.TryIndex<SalvageMagnetRuinConfigPrototype>(ruinConfigId, out var ruinConfig);
 
                 var ruinResult = _ruinGenerator.GenerateRuin(ruin.RuinMap.MapPath, seed, ruinConfig);
                 if (ruinResult == null)

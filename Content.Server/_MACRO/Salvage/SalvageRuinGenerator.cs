@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using Content.Server.GameTicking.Events;
+using Content.Shared._MACRO.Salvage;
 using Content.Shared.Maps;
-using Content.Shared.Salvage;
 using Robust.Shared.EntitySerialization.Systems;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Log;
@@ -19,7 +19,7 @@ using Robust.Shared.Serialization.Markdown.Sequence;
 using Robust.Shared.Serialization.Markdown.Value;
 using Robust.Shared.Utility;
 
-namespace Content.Server.Salvage;
+namespace Content.Server._MACRO.Salvage;
 
 /// <summary>
 /// Generates ruins from station maps using cost-based flood-fill.
@@ -352,6 +352,9 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
         var defaultTileCost = config?.DefaultTileCost ?? 1;
 
         // Find valid start location (retry up to 10 times)
+        // I found that with 5, it was failing occasionally 
+        // (it would find disconnected corners of the map, like pre-broken solars or something). 
+        // With 10 it's so unlikely that a costmap build failure almost never happens
         var rand = new System.Random(seed);
         var startPos = FindValidStartLocation(costMap, rand, maxRetries: 10, spaceCost);
         if (!startPos.HasValue)
@@ -625,7 +628,9 @@ public sealed class SalvageRuinGeneratorSystem : EntitySystem
                 _sawmill.Warning($"[SalvageRuinGenerator] Chunk {chunkIndexStr} missing 'tiles' data");
                 continue;
             }
-
+            // Based on the map-chunk-format in RobustToolbox. 
+            // Older map versions use different definitions for how to parse the map data. 
+            // This makes it so if version exists, it uses the version number on the map. If version doesn't exist, it assumes version 7.
             int version = 7;
             if (chunkNode.TryGet("version", out ValueDataNode? versionNode))
                 int.TryParse(versionNode.Value, out version);

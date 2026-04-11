@@ -1,5 +1,5 @@
 # Configuration for salvage magnet ruin generation.
-# Defaults in SalvageMagnetRuinConfigPrototype.cs are used when fields are omitted.
+# Defaults in Content.Shared/_MACRO/Salvage/SalvageMagnetRuinConfigPrototype.cs are used when fields are omitted.
 
 - type: salvageMagnetRuinConfig
   id: Default

@@ -1,7 +1,7 @@
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 
-namespace Content.Shared.Salvage;
+namespace Content.Shared._MACRO.Salvage;
 
 /// <summary>
 /// Prototype for configuring debris entities that spawn on salvage ruins.

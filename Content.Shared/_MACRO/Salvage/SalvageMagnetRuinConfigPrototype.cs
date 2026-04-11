@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using System.Collections.Generic;
 using Robust.Shared.Prototypes;
 
-namespace Content.Shared.Salvage;
+namespace Content.Shared._MACRO.Salvage;
 
 /// <summary>
 /// Configuration for salvage magnet ruin generation, including damage simulation parameters.
