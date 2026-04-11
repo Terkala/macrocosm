@@ -1,0 +1,17 @@
+PR #42776 surgical port metadata (space-wizards/space-station-14)
+================================================================pr-42776 tip: 71e59b7d3f61cfe4648b9277db499c491fbe5d84
+wizden merge-base: 748179752f337e3bb176b1f6955d32c8f17a714f
+ (merge-base of wizden/master and pr-42776; same as merge-base(pr-42776, macrocosm HEAD at port time))
+
+Path allowlist: pr42776-paths.txt (git diff --name-only <merge-base> pr-42776)
+
+Fork drift (macro HEAD differed from merge-base on these paths; merged manually or via git merge-file):
+- Content.Shared/EntityEffects/SharedEntityEffectsSystem.cs
+- Resources/Locale/en-US/reagents/meta/biological.ftl
+- Resources/Locale/en-US/stack/stacks.ftl
+- Resources/Prototypes/GameRules/roundstart.yml
+- Resources/Prototypes/Reagents/biological.yml
+- Resources/Prototypes/Reagents/medicine.yml
+- Resources/Prototypes/Recipes/Reactions/biological.yml
+
+Layout: upstream Content.*/BloodCult paths (no _MACRO remap in this port).
