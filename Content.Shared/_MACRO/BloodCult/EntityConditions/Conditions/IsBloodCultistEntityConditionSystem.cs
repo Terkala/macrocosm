@@ -5,10 +5,7 @@ using Robust.Shared.Prototypes;
 
 namespace Content.Shared._MACRO.BloodCult.EntityConditions.Conditions;
 
-/// <summary>
-/// Condition that checks if an entity is a Blood Cultist.
-/// Used for effects that should only affect cultists (like holy smoke).
-/// </summary>
+/// <inheritdoc cref="EntityConditionSystem{T, TCondition}"/>
 [UsedImplicitly]
 public sealed partial class IsBloodCultistEntityConditionSystem : EntityConditionSystem<BloodCultistComponent, IsBloodCultist>
 {

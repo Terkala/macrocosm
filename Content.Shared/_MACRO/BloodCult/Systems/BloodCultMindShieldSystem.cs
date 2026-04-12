@@ -11,6 +11,7 @@ using Content.Shared.Mind.Components;
 using Content.Shared.NPC.Systems;
 using Content.Shared.Roles;
 using Robust.Shared.GameObjects;
+using Robust.Shared.Network;
 using Content.Shared._MACRO.BloodCult;
 
 namespace Content.Shared._MACRO.BloodCult.Systems;
@@ -21,6 +22,7 @@ namespace Content.Shared._MACRO.BloodCult.Systems;
 /// </summary>
 public sealed class BloodCultMindShieldSystem : EntitySystem
 {
+    [Dependency] private readonly INetManager _net = default!;
     [Dependency] private readonly SharedRoleSystem _roleSystem = default!;
     [Dependency] private readonly SharedMindSystem _mindSystem = default!;
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
@@ -42,6 +44,10 @@ public sealed class BloodCultMindShieldSystem : EntitySystem
     /// <param name="log">If true, a <see cref="BloodCultDeconvertedEvent"/> is raised so the server can log the deconversion.</param>
     public bool TryDeconvert(EntityUid uid, string? popupLocId = "cult-break-control", TimeSpan? stunDuration = null, bool log = true)
     {
+        // Role/mind mutations raise network events; must not run during client prediction (e.g. metabolism).
+        if (!_net.IsServer)
+            return false;
+
         if (!HasComp<BloodCultistComponent>(uid))
             return false;
 

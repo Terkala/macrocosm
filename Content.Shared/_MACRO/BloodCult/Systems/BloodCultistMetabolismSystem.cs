@@ -1,5 +1,6 @@
 using System.Linq;
 using Content.Shared._MACRO.BloodCult.Components;
+using Content.Shared._MACRO.BloodCult.EntitySystems;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Systems;
 using Content.Shared.Chemistry.Components;
@@ -18,6 +19,7 @@ public sealed class BloodCultistMetabolismSystem : EntitySystem
 {
     [Dependency] private readonly SharedBloodstreamSystem _bloodstream = default!;
     [Dependency] private readonly IComponentFactory _componentFactory = default!;
+    [Dependency] private readonly HolywaterCultistIngestionSoundSystem _holywaterIngestionSound = default!;
 
     public override void Initialize()
     {
@@ -77,11 +79,13 @@ public sealed class BloodCultistMetabolismSystem : EntitySystem
 
     private void OnCultistTerminating(Entity<BloodCultistComponent> ent, ref EntityTerminatingEvent args)
     {
+        _holywaterIngestionSound.ClearBurnSoundDebounce(ent.Owner);
         RestoreBloodType(ent.Owner, ent.Comp, terminating: true);
     }
 
     private void OnCultistShutdown(Entity<BloodCultistComponent> ent, ref ComponentShutdown args)
     {
+        _holywaterIngestionSound.ClearBurnSoundDebounce(ent.Owner);
         RestoreBloodType(ent.Owner, ent.Comp, terminating: false);
     }
 

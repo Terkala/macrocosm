@@ -1035,17 +1035,17 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 		);
 		foreach (EntityUid cultist in cultists)
 		{
-			if (EntityManager.TryGetComponent(cultist, out AppearanceComponent? appearance))
+			if (!TryComp<AppearanceComponent>(cultist, out var appearance))
+				continue;
+
+			// Only enable eyes if the body has an attached head
+			var hasHead = HasComp<HumanoidProfileComponent>(cultist);
+			if (!hasHead && TryComp<BodyComponent>(cultist, out var body))
 			{
-				// Only enable eyes if the body has an attached head
-				var hasHead = HasComp<HumanoidProfileComponent>(cultist);
-				if (!hasHead && TryComp<BodyComponent>(cultist, out var body))
-				{
-					// Fallback: check if body has brain organ (non-humanoids may have heads with brains)
-					hasHead = body.Organs?.ContainedEntities.Any(o => HasComp<BrainComponent>(o)) ?? false;
-				}
-				_appearance.SetData(cultist, CultEyesVisuals.CultEyes, hasHead, appearance);
+				// Fallback: check if body has brain organ (non-humanoids may have heads with brains)
+				hasHead = body.Organs?.ContainedEntities.Any(o => HasComp<BrainComponent>(o)) ?? false;
 			}
+			_appearance.SetData(cultist, CultEyesVisuals.CultEyes, hasHead, appearance);
 		}
 	}
 
