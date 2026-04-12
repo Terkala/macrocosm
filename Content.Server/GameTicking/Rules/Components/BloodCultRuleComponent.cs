@@ -4,8 +4,8 @@ using Robust.Shared.Map;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom;
 using Content.Server.GameTicking.Rules;
 using Content.Shared.Mind;
-using Content.Shared.BloodCult;
-using Content.Shared.BloodCult.Components;
+using Content.Shared._MACRO.BloodCult;
+using Content.Shared._MACRO.BloodCult.Components;
 
 namespace Content.Server.GameTicking.Rules.Components;
 
@@ -14,7 +14,7 @@ namespace Content.Server.GameTicking.Rules.Components;
 ///	for stuff, and other round-wide stuff.
 /// </summary>
 // Rift system used to set up final summoning ritual site, to be added later
-//[RegisterComponent, Access(typeof(BloodCultRuleSystem), typeof(BloodCult.EntitySystems.BloodCultRiftSetupSystem))]
+//[RegisterComponent, Access(typeof(BloodCultRuleSystem), typeof(Content.Server._MACRO.BloodCult.EntitySystems.BloodCultRiftSetupSystem))]
 [RegisterComponent, Access(typeof(BloodCultRuleSystem))]//Swap for the above when the rift is added
 public sealed partial class BloodCultRuleComponent : Component
 {

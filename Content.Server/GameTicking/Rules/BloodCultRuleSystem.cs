@@ -25,8 +25,8 @@ using Content.Shared.Mind.Components;
 using Robust.Shared.Map;
 using Robust.Shared.Prototypes;
 using Content.Server.Speech.Prototypes;
-using Content.Shared.BloodCult;
-using Content.Shared.BloodCult.Components;
+using Content.Shared._MACRO.BloodCult;
+using Content.Shared._MACRO.BloodCult.Components;
 using Content.Shared.Roles.Components;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Mobs.Systems;
@@ -53,8 +53,8 @@ using Content.Server.Administration.Logs;
 using Content.Shared.Bed.Cryostorage;
 using Content.Shared.Bed.Sleep;
 
-using Content.Server.BloodCult.EntitySystems;
-using Content.Shared.BloodCult.Prototypes;
+using Content.Server._MACRO.BloodCult.EntitySystems;
+using Content.Shared._MACRO.BloodCult.Prototypes;
 
 using Content.Server.Ghost;
 using Content.Server.Ghost.Roles;
@@ -178,7 +178,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 	[Dependency] private readonly IAdminLogManager _adminLogger = default!;
 	[Dependency] private readonly IConsoleHost _consoleHost = default!;
 	//[Dependency] private readonly SharedTransformSystem _transformSystem = default!;
-	[Dependency] private readonly Content.Shared.BloodCult.Systems.BloodCultMindShieldSystem _mindShield = default!;
+	[Dependency] private readonly Content.Shared._MACRO.BloodCult.Systems.BloodCultMindShieldSystem _mindShield = default!;
 	[Dependency] private readonly ActionContainerSystem _actionContainer = default!;
 	[Dependency] private readonly SharedPointLightSystem _pointLight = default!;
 	[Dependency] private readonly SharedUserInterfaceSystem _uiSystem = default!;
@@ -474,7 +474,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 		{
 			if (_timing.CurTime >= component.BloodAnomalySpawnTime)
 			{
-				var riftSetup = EntityManager.System<BloodCult.EntitySystems.BloodCultRiftSetupSystem>();
+				var riftSetup = EntityManager.System<BloodCultRiftSetupSystem>();
 				var rift = riftSetup.TrySetupRitualSite(component);
 
 				if (rift != null)
