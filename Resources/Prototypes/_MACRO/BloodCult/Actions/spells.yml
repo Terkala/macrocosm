@@ -8,12 +8,12 @@
   - type: Action
     itemIconStyle: NoItem
     icon:
-      sprite: BloodCult/spells_cultist.rsi
+      sprite: _MACRO/BloodCult/spells_cultist.rsi
       state: study_veil
   - type: InstantAction
     event: !type:EventCultistStudyVeil {}
   - type: Sprite
-    sprite: BloodCult/spells_cultist.rsi
+    sprite: _MACRO/BloodCult/spells_cultist.rsi
     state: study_veil
   - type: CultistSpell
     abilityId: StudyVeil
@@ -31,12 +31,12 @@
   - type: Action
     itemIconStyle: NoItem
     icon:
-      sprite: BloodCult/spells_cultist.rsi
+      sprite: _MACRO/BloodCult/spells_cultist.rsi
       state: commune
   - type: InstantAction
     event: !type:BloodCultCommuneEvent {}
   - type: Sprite
-    sprite: BloodCult/spells_cultist.rsi
+    sprite: _MACRO/BloodCult/spells_cultist.rsi
     state: commune
   - type: CultistSpell
     abilityId: Commune
@@ -54,12 +54,12 @@
   - type: Action
     itemIconStyle: NoItem
     icon:
-      sprite: BloodCult/spells_cultist.rsi
+      sprite: _MACRO/BloodCult/spells_cultist.rsi
       state: spell_select
   - type: InstantAction
     event: !type:BloodCultSpellsEvent {}
   - type: Sprite
-    sprite: BloodCult/spells_cultist.rsi
+    sprite: _MACRO/BloodCult/spells_cultist.rsi
     state: spell_select
   - type: CultistSpell
     abilityId: SpellsSelect
@@ -75,15 +75,15 @@
   categories: [ HideSpawnMenu ]
   components:
   - type: Icon
-    sprite: BloodCult/spells_cultist.rsi
+    sprite: _MACRO/BloodCult/spells_cultist.rsi
     state: summon_dagger
   - type: Sprite
-    sprite: BloodCult/spells_cultist.rsi
+    sprite: _MACRO/BloodCult/spells_cultist.rsi
     state: summon_dagger
   - type: Action
     itemIconStyle: NoItem
     icon:
-      sprite: BloodCult/spells_cultist.rsi
+      sprite: _MACRO/BloodCult/spells_cultist.rsi
       state: summon_dagger
   - type: InstantAction
     event: !type:EventCultistSummonDagger {}
@@ -103,16 +103,16 @@
   - type: Action
     itemIconStyle: NoItem
     icon:
-      sprite: BloodCult/spells_cultist.rsi
+      sprite: _MACRO/BloodCult/spells_cultist.rsi
       state: stun
     iconOn:
-      sprite: BloodCult/spells_cultist.rsi
+      sprite: _MACRO/BloodCult/spells_cultist.rsi
       state: stun_selected
   - type: Icon
-    sprite: BloodCult/spells_cultist.rsi
+    sprite: _MACRO/BloodCult/spells_cultist.rsi
     state: stun
   - type: Sprite
-    sprite: BloodCult/spells_cultist.rsi
+    sprite: _MACRO/BloodCult/spells_cultist.rsi
     state: stun
   - type: TargetAction
     targetingIndicator: true
@@ -141,16 +141,16 @@
   - type: Action
     itemIconStyle: NoItem
     icon:
-      sprite: BloodCult/spells_cultist.rsi
+      sprite: _MACRO/BloodCult/spells_cultist.rsi
       state: twisted_construction
     iconOn:
-      sprite: BloodCult/spells_cultist.rsi
+      sprite: _MACRO/BloodCult/spells_cultist.rsi
       state: twisted_construction
   - type: Icon
-    sprite: BloodCult/spells_cultist.rsi
+    sprite: _MACRO/BloodCult/spells_cultist.rsi
     state: twisted_construction
   - type: Sprite
-    sprite: BloodCult/spells_cultist.rsi
+    sprite: _MACRO/BloodCult/spells_cultist.rsi
     state: twisted_construction
   - type: TargetAction
     targetingIndicator: true

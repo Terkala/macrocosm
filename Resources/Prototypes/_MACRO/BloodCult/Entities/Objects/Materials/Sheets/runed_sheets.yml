@@ -18,13 +18,13 @@
     - runedmetal_2
     - runedmetal_3
   - type: Sprite
-    sprite: BloodCult/Sheets/metal.rsi
+    sprite: _MACRO/BloodCult/Sheets/metal.rsi
     state: runedmetal_3
     layers:
     - state: runedmetal_3
       map: ["base"]
   - type: Item
-    sprite: BloodCult/Sheets/metal.rsi
+    sprite: _MACRO/BloodCult/Sheets/metal.rsi
     heldPrefix: runedmetal
   - type: Appearance
 
@@ -84,13 +84,13 @@
     - runedglass_2
     - runedglass_3
   - type: Sprite
-    sprite: BloodCult/Sheets/glass.rsi
+    sprite: _MACRO/BloodCult/Sheets/glass.rsi
     state: runedglass_3
     layers:
     - state: runedglass_3
       map: ["base"]
   - type: Item
-    sprite: BloodCult/Sheets/glass.rsi
+    sprite: _MACRO/BloodCult/Sheets/glass.rsi
     heldPrefix: runedglass
   - type: Appearance
 
@@ -150,13 +150,13 @@
     - runedplasteel_2
     - runedplasteel_3
   - type: Sprite
-    sprite: BloodCult/Sheets/plasteel.rsi
+    sprite: _MACRO/BloodCult/Sheets/plasteel.rsi
     state: runedplasteel_3
     layers:
     - state: runedplasteel_3
       map: ["base"]
   - type: Item
-    sprite: BloodCult/Sheets/plasteel.rsi
+    sprite: _MACRO/BloodCult/Sheets/plasteel.rsi
     heldPrefix: runedplasteel
   - type: Appearance
 

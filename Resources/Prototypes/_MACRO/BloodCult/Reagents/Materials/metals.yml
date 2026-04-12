@@ -2,5 +2,5 @@
   id: RunedSteel
   stackEntity: SheetRunedSteel1
   name: runed steel
-  icon: { sprite: BloodCult/Sheets/metal.rsi, state: runedmetal }
+  icon: { sprite: _MACRO/BloodCult/Sheets/metal.rsi, state: runedmetal }
   price: 0.0
