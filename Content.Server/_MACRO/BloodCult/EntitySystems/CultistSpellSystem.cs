@@ -321,6 +321,9 @@ public sealed partial class CultistSpellSystem : EntitySystem
 /* Juggernauts using the commune ability, to be uncommented when juggernauts are added
 	private void OnJuggernautCommune(Entity<JuggernautComponent> ent, ref BloodCultCommuneSendMessage args)
 	{
+		if (HasComp<BloodCultistComponent>(ent))
+			return;
+
 		ent.Comp.CommuningMessage = args.Message;
 	}
 */

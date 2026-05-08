@@ -182,8 +182,11 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 	[Dependency] private readonly ActionContainerSystem _actionContainer = default!;
 	[Dependency] private readonly SharedPointLightSystem _pointLight = default!;
 	[Dependency] private readonly SharedUserInterfaceSystem _uiSystem = default!;
+	[Dependency] private readonly MobStateSystem _mobState = default!;
 
 	public readonly string CultComponentId = "BloodCultist";
+
+	private static readonly TimeSpan ChantCooldown = TimeSpan.FromSeconds(1);
 
 	private static readonly EntProtoId MindRole = "MindRoleCultist";
 
@@ -577,11 +580,12 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 			}
 */
 
-			// Distribute cult communes
+			// Distribute cult communes (drain message before dispatch so a partial failure cannot re-queue next tick)
 			if (cultist.CommuningMessage != null)
 			{
-				DistributeCommune(component, cultist.CommuningMessage, cultistUid);
+				var pendingCommune = cultist.CommuningMessage;
 				cultist.CommuningMessage = null;
+				DistributeCommune(component, pendingCommune, cultistUid);
 			}
 /* Revive and sacrifice logic, to be added with runes
 			// Apply active revives
@@ -870,15 +874,54 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 		}
 	}
 
-	public void Speak(EntityUid? uid, string speech, bool forceLoud = false)
+	/// <summary>
+	/// Emits a forced in-character cult chant for the performer. Returns false if preconditions or cooldown blocked it.
+	/// </summary>
+	public bool Speak(EntityUid? uid, string speech, bool forceLoud = false)
 	{
 		if (uid == null || string.IsNullOrWhiteSpace(speech))
-			return;
+			return false;
+
+		if (!CanCultistChant(uid.Value))
+			return false;
+
+		if (!TryConsumeChantCooldown(uid.Value))
+			return false;
 
 		if (!Loc.TryGetString(speech, out var message))
 			message = speech;
 
 		OnBloodCultSpellSpoken(uid.Value, message, forceLoud);
+		return true;
+	}
+
+	/// <summary>
+	/// Whether the entity may currently act as a cult chant source (alive, not terminating, still a cultist).
+	/// </summary>
+	public bool CanCultistChant(EntityUid uid)
+	{
+		if (!Exists(uid) || TerminatingOrDeleted(uid))
+			return false;
+
+		if (!HasComp<BloodCultistComponent>(uid))
+			return false;
+
+		return _mobState.IsAlive(uid);
+	}
+
+	private bool TryConsumeChantCooldown(EntityUid uid)
+	{
+		var now = _timing.CurTime;
+
+		if (TryComp<BloodCultistComponent>(uid, out var cultist))
+		{
+			if (now < cultist.NextChantTime)
+				return false;
+			cultist.NextChantTime = now + ChantCooldown;
+			return true;
+		}
+
+		return true;
 	}
 
 	private void OnBloodCultSpellSpoken(EntityUid performer, string speech, bool forceLoud)
@@ -1272,49 +1315,60 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 	// 	return true;
 	// }
 
-	public void DistributeCommune(BloodCultRuleComponent component, string message, EntityUid sender)
+	public bool DistributeCommune(BloodCultRuleComponent component, string message, EntityUid sender)
 	{
+		if (string.IsNullOrWhiteSpace(message))
+			return false;
+
+		if (!Exists(sender) || TerminatingOrDeleted(sender))
+			return false;
+
+		if (!CanCultistChant(sender))
+			return false;
+
+		var mindId = CompOrNull<MindContainerComponent>(sender)?.Mind;
+		if (mindId is not { } mind || TerminatingOrDeleted(mind))
+			return false;
+
+		if (!TryConsumeChantCooldown(sender))
+			return false;
+
 		string formattedMessage = FormattedMessage.EscapeText(message);
-
-		EntityUid? mindId = CompOrNull<MindContainerComponent>(sender)?.Mind;
-
-		if (mindId != null)
+		var metaData = MetaData(sender);
+		string localSpeech;
+		/* Juggernaut logic, uncomment when juggernauts are added
+		// Check if sender is a juggernaut - use juggernaut accent words instead of random chant
+		if (HasComp<JuggernautComponent>(sender))
 		{
-			var metaData = MetaData(sender);
-			string localSpeech;
-			/* Juggernaut logic, uncomment when juggernauts are added
-			// Check if sender is a juggernaut - use juggernaut accent words instead of random chant
-			if (HasComp<JuggernautComponent>(sender))
+			// Dynamically get the count of juggernaut accent words from the prototype
+			var juggernautWordCount = 1; // Default to 1 if prototype not found
+			if (_proto.TryIndex<ReplacementAccentPrototype>(JuggernautAccentPrototypeId, out var juggernautAccent) &&
+			    juggernautAccent.FullReplacements != null && juggernautAccent.FullReplacements.Length > 0)
 			{
-				// Dynamically get the count of juggernaut accent words from the prototype
-				var juggernautWordCount = 1; // Default to 1 if prototype not found
-				if (_proto.TryIndex<ReplacementAccentPrototype>(JuggernautAccentPrototypeId, out var juggernautAccent) &&
-				    juggernautAccent.FullReplacements != null && juggernautAccent.FullReplacements.Length > 0)
-				{
-					juggernautWordCount = juggernautAccent.FullReplacements.Length;
-				}
-				
-				// Pick a random juggernaut accent word (1-based index)
-				var juggernautWordIndex = _random.Next(1, juggernautWordCount + 1);
-				localSpeech = Loc.GetString($"accent-words-juggernaut-{juggernautWordIndex}");
+				juggernautWordCount = juggernautAccent.FullReplacements.Length;
 			}
-			else
-			{
-				// Generate a random single-word chant from cult-chants.ftl
-				localSpeech = GenerateChant(wordCount: 1);
-			}
-			*/
-			localSpeech = GenerateChant(wordCount: 1); //Remove when juggernauts are added
 
-			_chat.TrySendInGameICMessage(sender, localSpeech, InGameICChatType.Whisper, ChatTransmitRange.Normal);
-			_jobs.MindTryGetJob(mindId, out var prototype);
-			string job = "Crewmember";
-			if (prototype != null)
-				job = prototype.LocalizedName;
-			AnnounceToCultists(Loc.GetString("cult-commune-message", ("name", metaData.EntityName),
-				("job", job), ("message", formattedMessage)), color:new Color(166, 27, 27, 255),
-				fontSize: 12, newlineNeeded:false, includeGhosts:true);
+			// Pick a random juggernaut accent word (1-based index)
+			var juggernautWordIndex = _random.Next(1, juggernautWordCount + 1);
+			localSpeech = Loc.GetString($"accent-words-juggernaut-{juggernautWordIndex}");
 		}
+		else
+		{
+			// Generate a random single-word chant from cult-chants.ftl
+			localSpeech = GenerateChant(wordCount: 1);
+		}
+		*/
+		localSpeech = GenerateChant(wordCount: 1); //Remove when juggernauts are added
+
+		_chat.TrySendInGameICMessage(sender, localSpeech, InGameICChatType.Whisper, ChatTransmitRange.Normal);
+		_jobs.MindTryGetJob(mind, out var prototype);
+		string job = "Crewmember";
+		if (prototype != null)
+			job = prototype.LocalizedName;
+		AnnounceToCultists(Loc.GetString("cult-commune-message", ("name", metaData.EntityName),
+			("job", job), ("message", formattedMessage)), color:new Color(166, 27, 27, 255),
+			fontSize: 12, newlineNeeded:false, includeGhosts:true);
+		return true;
 	}
 
 	/// <summary>

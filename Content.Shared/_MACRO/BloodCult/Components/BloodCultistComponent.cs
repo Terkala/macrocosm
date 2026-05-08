@@ -1,3 +1,4 @@
+using System;
 using Content.Shared.StatusIcon;
 using Content.Shared.StatusIcon.Components;
 using Robust.Shared.GameStates;
@@ -59,6 +60,11 @@ public sealed partial class BloodCultistComponent : Component
 	///		Message the cultist is attempting to commune to the others.
 	/// </summary>
 	[DataField] public string? CommuningMessage = null;
+
+	/// <summary>
+	/// Server-only: next game time this entity may emit a forced cult chant (commune whisper, spell invocation, etc.).
+	/// </summary>
+	[DataField] public TimeSpan NextChantTime;
 
 	/// <summary>
 	/// The Uid of the person trying to revive the cultist.
