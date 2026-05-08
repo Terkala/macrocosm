@@ -20,6 +20,7 @@ using Content.Server.GameTicking.Rules.Components;
 using Content.Shared.NPC.Systems;
 using Content.Shared.NPC.Prototypes;
 using Content.Shared.NPC.Components;
+using Content.Shared.Objectives.Systems;
 using Content.Shared.Mind;
 using Content.Shared.Mind.Components;
 using Robust.Shared.Map;
@@ -163,6 +164,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 
 	[Dependency] private readonly AntagSelectionSystem _antag = default!;
 	[Dependency] private readonly MindSystem _mind = default!;
+	[Dependency] private readonly TargetSystem _target = default!;
 	[Dependency] private readonly RoleSystem _role = default!;
 	[Dependency] private readonly PopupSystem _popupSystem = default!;
 	[Dependency] private readonly IRobustRandom _random = default!;
@@ -1030,7 +1032,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 
 	private void SetConversionsNeeded(BloodCultRuleComponent component)
 	{
-		var allAliveHumans = _mind.GetAliveHumans();
+		var allAliveHumans = _target.GetAliveHumans();
 		// 10% cult needed for eyes
 		component.ConversionsUntilEyes = (int)Math.Ceiling((float)allAliveHumans.Count * 0.125f);
 		// 30% cult needed for rise
@@ -1043,7 +1045,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 	/// </summary>
 	private void SetMinimumCultistsForVeilRitual(BloodCultRuleComponent component)
 	{
-		var allAliveHumans = _mind.GetAliveHumans();
+		var allAliveHumans = _target.GetAliveHumans();
 		// 5% of players, minimum of 2, maximum of 4
 		// So at 20 players its 2, at 20-60 players its 3, at 60+ players its 4
 		component.MinimumCultistsForVeilRitual = Math.Max(2, Math.Min(4,(int)Math.Ceiling((float)allAliveHumans.Count * 0.05f)));
