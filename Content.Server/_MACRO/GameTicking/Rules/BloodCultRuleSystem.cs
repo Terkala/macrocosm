@@ -84,7 +84,7 @@ using Robust.Shared.GameObjects;
 namespace Content.Server.GameTicking.Rules;
 
 /// <summary>
-/// Where all the main stuff for Blood Cult is
+/// All the main stuff for Blood Cult
 /// </summary>
 public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 {
